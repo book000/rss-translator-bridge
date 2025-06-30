@@ -1,8 +1,14 @@
 import fastify from 'fastify'
 import cors from '@fastify/cors'
+import staticPlugin from '@fastify/static'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 import { loadConfig } from './config.js'
 import { RSSProcessor } from './rss-processor.js'
 import { TranslateRequest, TranslateResponse } from './types.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 export async function getApp() {
   const config = loadConfig()
@@ -15,6 +21,12 @@ export async function getApp() {
     origin: true,
   })
 
+  // Register static files
+  await app.register(staticPlugin, {
+    root: path.join(__dirname, '../public'),
+    prefix: '/',
+  })
+
   const rssProcessor = new RSSProcessor(config.gasUrl)
 
   // Health check endpoint
@@ -22,10 +34,39 @@ export async function getApp() {
     return { status: 'ok', timestamp: new Date().toISOString() }
   })
 
-  // Main RSS translation endpoint
+  // Proxy endpoint for fetching original RSS (CORS workaround)
+  app.get<{
+    Querystring: { url: string }
+  }>('/api/proxy', async (request, reply) => {
+    const { url } = request.query
+
+    if (!url) {
+      return reply.code(400).send({ error: 'URL parameter is required' })
+    }
+
+    try {
+      const response = await fetch(url)
+      if (!response.ok) {
+        return await reply
+          .code(response.status)
+          .send({ error: `Failed to fetch RSS: ${response.statusText}` })
+      }
+
+      const rssContent = await response.text()
+      return await reply
+        .code(200)
+        .header('Content-Type', 'application/rss+xml; charset=utf-8')
+        .send(rssContent)
+    } catch (error) {
+      app.log.error(error)
+      return reply.code(500).send({ error: 'Failed to fetch original RSS' })
+    }
+  })
+
+  // Main RSS translation API endpoint
   app.get<{
     Querystring: TranslateRequest
-  }>('/', async (request, reply) => {
+  }>('/api', async (request, reply) => {
     const { url, sourceLang, targetLang } = request.query
 
     if (!url) {
