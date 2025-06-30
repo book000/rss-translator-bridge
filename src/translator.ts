@@ -59,7 +59,7 @@ export class Translator {
         )
 
         for (const result of response.data.results) {
-          if (result.success) {
+          if (result.success && result.translated) {
             results.set(result.id, result.translated)
           } else {
             console.log(`Translation failed for ${result.id}:`, result.error)

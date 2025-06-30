@@ -136,3 +136,7 @@ dist
 
 # Vercel
 .vercel
+
+# Package manager lock files (pnpm only)
+package-lock.json
+yarn.lock

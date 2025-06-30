@@ -45,7 +45,7 @@ export interface GASBatchTranslateRequest {
 export interface BatchTranslateResult {
   id: string
   original: string
-  translated: string
+  translated?: string
   success: boolean
   error?: string
 }

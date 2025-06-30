@@ -46,4 +46,69 @@ describe('loadConfig', () => {
     expect(config.defaultSourceLang).toBe('en')
     expect(config.defaultTargetLang).toBe('ko')
   })
+
+  it('should handle invalid PORT environment variable', () => {
+    process.env.GAS_URL = 'https://example.com/gas'
+    process.env.PORT = 'invalid'
+
+    const config = loadConfig()
+
+    expect(config.port).toBeNaN() // parseInt returns NaN for invalid input
+  })
+
+  it('should handle empty string environment variables', () => {
+    process.env.GAS_URL = 'https://example.com/gas'
+    process.env.PORT = ''
+    process.env.HOST = ''
+    process.env.DEFAULT_SOURCE_LANG = ''
+    process.env.DEFAULT_TARGET_LANG = ''
+
+    const config = loadConfig()
+
+    expect(config.port).toBeNaN() // parseInt('') returns NaN
+    expect(config.host).toBe('') // empty string, not fallback
+    expect(config.defaultSourceLang).toBe('') // empty string, not fallback
+    expect(config.defaultTargetLang).toBe('') // empty string, not fallback
+  })
+
+  it('should handle zero PORT value', () => {
+    process.env.GAS_URL = 'https://example.com/gas'
+    process.env.PORT = '0'
+
+    const config = loadConfig()
+
+    expect(config.port).toBe(0) // valid port 0
+  })
+
+  it('should handle negative PORT value', () => {
+    process.env.GAS_URL = 'https://example.com/gas'
+    process.env.PORT = '-1'
+
+    const config = loadConfig()
+
+    expect(config.port).toBe(-1) // parseInt('-1') returns -1
+  })
+
+  it('should handle very large PORT value', () => {
+    process.env.GAS_URL = 'https://example.com/gas'
+    process.env.PORT = '99999'
+
+    const config = loadConfig()
+
+    expect(config.port).toBe(99_999) // should accept valid large port numbers
+  })
+
+  it('should use environment variables as-is without trimming', () => {
+    process.env.GAS_URL = '  https://example.com/gas  '
+    process.env.HOST = '  localhost  '
+    process.env.DEFAULT_SOURCE_LANG = '  en  '
+    process.env.DEFAULT_TARGET_LANG = '  ko  '
+
+    const config = loadConfig()
+
+    expect(config.gasUrl).toBe('  https://example.com/gas  ')
+    expect(config.host).toBe('  localhost  ')
+    expect(config.defaultSourceLang).toBe('  en  ')
+    expect(config.defaultTargetLang).toBe('  ko  ')
+  })
 })
