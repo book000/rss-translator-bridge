@@ -7,8 +7,8 @@ import { loadConfig } from './config.js'
 import { RSSProcessor } from './rss-processor.js'
 import { TranslateRequest, TranslateResponse } from './types.js'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+const currentFilename = fileURLToPath(import.meta.url)
+const currentDirname = path.dirname(currentFilename)
 
 export async function getApp() {
   const config = loadConfig()
@@ -21,11 +21,13 @@ export async function getApp() {
     origin: true,
   })
 
-  // Register static files
-  await app.register(staticPlugin, {
-    root: path.join(__dirname, '../public'),
-    prefix: '/',
-  })
+  // Register static files (skip in test environment)
+  if (process.env.NODE_ENV !== 'test') {
+    await app.register(staticPlugin, {
+      root: path.join(currentDirname, '../public'),
+      prefix: '/',
+    })
+  }
 
   const rssProcessor = new RSSProcessor(config.gasUrl)
 
