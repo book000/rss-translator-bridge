@@ -49,7 +49,7 @@ class RSSTranslator {
       )
 
       // 並行で実行
-      const [originalRss, translatedRss] = await Promise.all([
+      const [originalRss, translatedResult] = await Promise.all([
         originalRssPromise,
         translatedRssPromise,
       ])
@@ -57,10 +57,19 @@ class RSSTranslator {
       const endTime = performance.now()
       const responseTime = endTime - startTime
 
-      this.showResults(originalRss, translatedRss, responseTime, startDateTime)
+      this.showResults(
+        originalRss,
+        translatedResult.text,
+        responseTime,
+        startDateTime,
+        translatedResult.status
+      )
     } catch (error) {
       console.error('Translation error:', error)
-      this.showError(error.message || '翻訳処理中にエラーが発生しました')
+      this.showError(
+        error.message || '翻訳処理中にエラーが発生しました',
+        error.status
+      )
     } finally {
       this.endTranslation()
     }
@@ -113,9 +122,11 @@ class RSSTranslator {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(
+      const error = new Error(
         errorData.error || `HTTP ${response.status}: ${response.statusText}`
       )
+      error.status = response.status
+      throw error
     }
 
     const contentType = response.headers.get('content-type')
@@ -124,7 +135,11 @@ class RSSTranslator {
       throw new Error(errorData.error || '翻訳処理でエラーが発生しました')
     }
 
-    return await response.text()
+    const text = await response.text()
+    return {
+      text,
+      status: response.status,
+    }
   }
 
   startTranslation() {
@@ -142,11 +157,17 @@ class RSSTranslator {
     this.loadingSection.style.display = 'none'
   }
 
-  showResults(originalXml, translatedXml, responseTime, startTime) {
+  showResults(
+    originalXml,
+    translatedXml,
+    responseTime,
+    startTime,
+    httpStatus = 200
+  ) {
     // パフォーマンス情報を表示
     document.querySelector('#responseTime').textContent =
       `${responseTime.toFixed(2)}ms`
-    document.querySelector('#status').textContent = '成功'
+    document.querySelector('#status').textContent = `成功 (HTTP ${httpStatus})`
     document.querySelector('#startTime').textContent =
       startTime.toLocaleString()
 
@@ -165,14 +186,15 @@ class RSSTranslator {
     this.resultsSection.style.display = 'block'
   }
 
-  showError(message) {
+  showError(message, httpStatus) {
     document.querySelector('#errorMessage').textContent = message
     this.errorSection.style.display = 'block'
     this.performanceSection.style.display = 'none'
     this.resultsSection.style.display = 'none'
 
     // パフォーマンス情報にエラー状態を表示
-    document.querySelector('#status').textContent = 'エラー'
+    const statusText = httpStatus ? `エラー (HTTP ${httpStatus})` : 'エラー'
+    document.querySelector('#status').textContent = statusText
 
     // リクエストURLを表示（エラーの場合でも）
     if (this.currentRequestUrl) {
