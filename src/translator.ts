@@ -1,7 +1,6 @@
 import axios from 'axios'
 import {
   GASTranslateRequest,
-  GASTranslateResponse,
   GASBatchTranslateRequest,
   GASBatchTranslateResponse,
   BatchTranslateItem,
@@ -27,7 +26,12 @@ export class Translator {
       }
 
       console.log(`Sending batch request with ${items.length} items to GAS`)
-      console.log('First 3 items:', items.slice(0, 3).map(item => ({ id: item.id, textLength: item.text.length })))
+      console.log(
+        'First 3 items:',
+        items
+          .slice(0, 3)
+          .map((item) => ({ id: item.id, textLength: item.text.length }))
+      )
 
       const response = await axios.post<GASBatchTranslateResponse>(
         this.gasUrl,
@@ -36,7 +40,7 @@ export class Translator {
           headers: {
             'Content-Type': 'application/json',
           },
-          timeout: 25000, // 25 seconds timeout for batch processing (within Vercel's 30s limit)
+          timeout: 25_000, // 25 seconds timeout for batch processing (within Vercel's 30s limit)
         }
       )
 
@@ -46,12 +50,14 @@ export class Translator {
         processed: response.data.processed,
         total: response.data.total,
         executionTime: response.data.executionTime,
-        resultCount: response.data.results?.length
+        resultCount: response.data.results.length,
       })
 
       if (response.status === 200 && response.data.status) {
-        console.log(`Processing ${response.data.results.length} results from GAS`)
-        
+        console.log(
+          `Processing ${response.data.results.length} results from GAS`
+        )
+
         for (const result of response.data.results) {
           if (result.success) {
             results.set(result.id, result.translated)
@@ -70,9 +76,12 @@ export class Translator {
       }
     } catch (error) {
       console.error('Batch translation error:', error)
-      if (error.response) {
-        console.error('Error response data:', error.response.data)
-        console.error('Error response status:', error.response.status)
+      if (error instanceof Error && 'response' in error) {
+        const axiosError = error as {
+          response?: { data?: unknown; status?: number }
+        }
+        console.error('Error response data:', axiosError.response?.data)
+        console.error('Error response status:', axiosError.response?.status)
       }
       // フォールバック：元のテキストを使用
       for (const item of items) {
@@ -96,19 +105,17 @@ export class Translator {
         mode: 'html',
       }
 
-      const response = await axios.post<any>(this.gasUrl, request, {
+      const response = await axios.post<{
+        response?: { status?: boolean; result?: string }
+      }>(this.gasUrl, request, {
         headers: {
           'Content-Type': 'application/json',
         },
         timeout: 5000, // 5 seconds timeout for Vercel compatibility
       })
 
-      if (
-        response.status === 200 &&
-        response.data.response &&
-        response.data.response.status
-      ) {
-        return response.data.response.result
+      if (response.status === 200 && response.data.response?.status) {
+        return response.data.response.result ?? null
       }
 
       return null

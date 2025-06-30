@@ -94,7 +94,7 @@ export interface RSSObject {
       description: string
       language: string
       lastBuildDate: string
-      item: Array<{
+      item: {
         title: string
         link: string
         description: string
@@ -102,7 +102,7 @@ export interface RSSObject {
         guid: string
         'content:encoded'?: string
         'dc:creator'?: string
-      }>
+      }[]
     }
   }
 }

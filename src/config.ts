@@ -8,9 +8,9 @@ export function loadConfig(): Config {
 
   return {
     gasUrl,
-    port: parseInt(process.env.PORT || '3000', 10),
-    host: process.env.HOST || '0.0.0.0',
-    defaultSourceLang: process.env.DEFAULT_SOURCE_LANG || 'auto',
-    defaultTargetLang: process.env.DEFAULT_TARGET_LANG || 'ja',
+    port: Number.parseInt(process.env.PORT ?? '3000', 10),
+    host: process.env.HOST ?? '0.0.0.0',
+    defaultSourceLang: process.env.DEFAULT_SOURCE_LANG ?? 'auto',
+    defaultTargetLang: process.env.DEFAULT_TARGET_LANG ?? 'ja',
   }
 }
