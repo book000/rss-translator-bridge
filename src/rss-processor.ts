@@ -19,7 +19,8 @@ export class RSSProcessor {
   async processRSSFeed(
     feedUrl: string,
     sourceLang: string,
-    targetLang: string
+    targetLang: string,
+    skipFeedTitle = true
   ): Promise<string | null> {
     try {
       // Fetch and parse RSS feed
@@ -29,7 +30,7 @@ export class RSSProcessor {
       const batchItems: BatchTranslateItem[] = []
 
       // Add feed metadata
-      if (feed.title) {
+      if (feed.title && !skipFeedTitle) {
         batchItems.push({ id: 'feed-title', text: feed.title })
       }
       if (feed.description) {
@@ -61,7 +62,7 @@ export class RSSProcessor {
       )
 
       // Apply translations to feed metadata
-      if (feed.title && translations.has('feed-title')) {
+      if (feed.title && !skipFeedTitle && translations.has('feed-title')) {
         feed.title = translations.get('feed-title') ?? feed.title
       }
       if (feed.description && translations.has('feed-description')) {
