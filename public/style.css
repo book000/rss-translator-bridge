@@ -135,10 +135,15 @@ button:disabled {
   color: #2c3e50;
 }
 
+.performance-item.url-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .url-controls {
   display: flex;
   gap: 8px;
-  margin-top: 5px;
 }
 
 .url-controls input[type='text'] {
