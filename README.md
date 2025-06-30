@@ -20,28 +20,29 @@ GET https://your-domain.com/?url=RSS_FEED_URL&sourceLang=SOURCE&targetLang=TARGE
 ```
 
 **例**: 英語の RSS フィードを日本語に翻訳
+
 ```
 https://your-domain.com/?url=https://example.com/feed.xml&sourceLang=en&targetLang=ja
 ```
 
 ### パラメータ
 
-| パラメータ | 必須 | 説明 | デフォルト |
-|-----------|------|------|-----------|
-| `url` | ✅ | 翻訳対象の RSS フィード URL | - |
-| `sourceLang` | ❌ | ソース言語コード ([ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)) | `auto` |
-| `targetLang` | ❌ | ターゲット言語コード | `ja` |
+| パラメータ   | 必須 | 説明                                                                                  | デフォルト |
+| ------------ | ---- | ------------------------------------------------------------------------------------- | ---------- |
+| `url`        | ✅   | 翻訳対象の RSS フィード URL                                                           | -          |
+| `sourceLang` | ❌   | ソース言語コード ([ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)) | `auto`     |
+| `targetLang` | ❌   | ターゲット言語コード                                                                  | `ja`       |
 
 ### サポート言語
 
 Google Translate API がサポートする全ての言語に対応：
 
-| 言語コード | 言語名 | 言語コード | 言語名 |
-|-----------|-------|-----------|-------|
-| `auto` | 自動検出 | `ja` | 日本語 |
-| `en` | 英語 | `ko` | 韓国語 |
-| `zh` | 中国語 | `fr` | フランス語 |
-| `es` | スペイン語 | `de` | ドイツ語 |
+| 言語コード | 言語名     | 言語コード | 言語名     |
+| ---------- | ---------- | ---------- | ---------- |
+| `auto`     | 自動検出   | `ja`       | 日本語     |
+| `en`       | 英語       | `ko`       | 韓国語     |
+| `zh`       | 中国語     | `fr`       | フランス語 |
+| `es`       | スペイン語 | `de`       | ドイツ語   |
 
 ## 🛠️ 開発環境
 
@@ -54,17 +55,20 @@ Google Translate API がサポートする全ての言語に対応：
 ### セットアップ
 
 1. **リポジトリのクローン**
+
    ```bash
    git clone https://github.com/book000/rss-translator-bridge.git
    cd rss-translator-bridge
    ```
 
 2. **依存関係のインストール**
+
    ```bash
    pnpm install
    ```
 
 3. **環境変数の設定**
+
    ```bash
    cp .env.example .env
    # .env ファイルを編集して環境変数を設定
@@ -77,13 +81,13 @@ Google Translate API がサポートする全ての言語に対応：
 
 ### 環境変数
 
-| 変数名 | 必須 | 説明 | デフォルト |
-|--------|------|------|-----------|
-| `GAS_URL` | ✅ | Google Apps Script 翻訳 API の URL | - |
-| `PORT` | ❌ | サーバーポート | `3000` |
-| `HOST` | ❌ | サーバーホスト | `0.0.0.0` |
-| `DEFAULT_SOURCE_LANG` | ❌ | デフォルトソース言語 | `auto` |
-| `DEFAULT_TARGET_LANG` | ❌ | デフォルトターゲット言語 | `ja` |
+| 変数名                | 必須 | 説明                               | デフォルト |
+| --------------------- | ---- | ---------------------------------- | ---------- |
+| `GAS_URL`             | ✅   | Google Apps Script 翻訳 API の URL | -          |
+| `PORT`                | ❌   | サーバーポート                     | `3000`     |
+| `HOST`                | ❌   | サーバーホスト                     | `0.0.0.0`  |
+| `DEFAULT_SOURCE_LANG` | ❌   | デフォルトソース言語               | `auto`     |
+| `DEFAULT_TARGET_LANG` | ❌   | デフォルトターゲット言語           | `ja`       |
 
 ### 開発コマンド
 
@@ -155,11 +159,13 @@ pnpm typecheck         # TypeScript 型チェックのみ
 ### Vercel デプロイ
 
 1. **Vercel CLI のインストール**
+
    ```bash
    npm i -g vercel
    ```
 
 2. **デプロイ実行**
+
    ```bash
    vercel
    ```
@@ -170,7 +176,7 @@ pnpm typecheck         # TypeScript 型チェックのみ
 ### その他のプラットフォーム
 
 - **Netlify**: `netlify.toml` 設定済み
-- **Railway**: `railway.json` 設定済み  
+- **Railway**: `railway.json` 設定済み
 - **Docker**: `Dockerfile` 提供
 
 ## 🧪 テスト
@@ -205,11 +211,13 @@ pnpm test --coverage
 RSS フィードを翻訳して返すメインエンドポイント
 
 **リクエスト**
+
 ```
 GET /?url=https://example.com/feed.xml&sourceLang=en&targetLang=ja
 ```
 
 **レスポンス**
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
@@ -229,6 +237,7 @@ GET /?url=https://example.com/feed.xml&sourceLang=en&targetLang=ja
 ヘルスチェックエンドポイント
 
 **レスポンス**
+
 ```json
 {
   "status": "ok",
@@ -241,14 +250,17 @@ GET /?url=https://example.com/feed.xml&sourceLang=en&targetLang=ja
 ### よくある問題
 
 **Q: 翻訳が失敗する**
+
 - GAS_URL が正しく設定されているか確認
 - GAS エンドポイントが正常に動作しているか確認
 
 **Q: RSS フィードが取得できない**
+
 - 対象 URL が有効な RSS フィードか確認
 - CORS 設定を確認
 
 **Q: Vercel で 30 秒タイムアウト**
+
 - バッチサイズを調整（GAS 側のタイムアウト: 25 秒）
 - 大きなフィードは分割処理を検討
 
@@ -267,9 +279,6 @@ GET /?url=https://example.com/feed.xml&sourceLang=en&targetLang=ja
 - Jest による包括的なテスト
 - Conventional Commits によるコミットメッセージ
 
+## 📄 ライセンス
 
----
-
-<div align="center">
-  <strong>Made with ❤️ by <a href="https://github.com/book000">book000</a></strong>
-</div>
+MIT License - 詳細は [LICENSE](LICENSE) ファイルを参照してください。
