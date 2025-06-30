@@ -15,11 +15,11 @@ describe('Translator', () => {
   it('should translate text successfully', async () => {
     const mockResponse = {
       status: 200,
-      data: { 
+      data: {
         response: {
           status: true,
-          result: 'こんにちは'
-        }
+          result: 'こんにちは',
+        },
       },
     }
     mockedAxios.post.mockResolvedValueOnce(mockResponse)
