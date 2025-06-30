@@ -26,18 +26,26 @@ https://example.com/?url=https://...&sourceLang=en&targetLang=ja
 
 ### 開発
 
+このプロジェクトは **pnpm** を使用します。
+
 ```bash
 # 依存関係のインストール
-npm install
+pnpm install
 
 # 開発サーバーの起動
-npm run dev
+pnpm dev
 
 # ビルド
-npm run build
+pnpm build
 
 # プロダクションサーバーの起動
-npm start
+pnpm start
+
+# 品質チェック（コミット前に実行）
+pnpm lint
+
+# テスト実行
+pnpm test
 ```
 
 ### デプロイ
