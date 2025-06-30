@@ -13,9 +13,6 @@ importers:
       axios:
         specifier: ^1.6.0
         version: 1.10.0
-      dotenv:
-        specifier: ^17.0.0
-        version: 17.0.0
       fastify:
         specifier: ^4.25.0
         version: 4.29.1
@@ -1708,13 +1705,6 @@ packages:
         integrity: sha512-35mSku4ZXK0vfCuHEDAwt55dg2jNajHZ1odvF+8SSr82EsZY4QmXfuWso8oEd8zRhVObSN18aM0CjSdoBX7zIw==,
       }
     engines: { node: '>=0.10.0' }
-
-  dotenv@17.0.0:
-    resolution:
-      {
-        integrity: sha512-A0BJ5lrpJVSfnMMXjmeO0xUnoxqsBHWCoqqTnGwGYVdnctqXXUEhJOO7LxmgxJon9tEZFGpe0xPRX0h2v3AANQ==,
-      }
-    engines: { node: '>=12' }
 
   dunder-proto@1.0.1:
     resolution:
@@ -5615,8 +5605,6 @@ snapshots:
   doctrine@2.1.0:
     dependencies:
       esutils: 2.0.3
-
-  dotenv@17.0.0: {}
 
   dunder-proto@1.0.1:
     dependencies:
