@@ -1,14 +1,14 @@
 {
   "version": 2,
   "functions": {
-    "src/index.ts": {
+    "api/serverless.ts": {
       "maxDuration": 30
     }
   },
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/src/index.ts"
+      "destination": "/api/serverless"
     }
   ],
   "env": {
