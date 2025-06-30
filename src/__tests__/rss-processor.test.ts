@@ -247,10 +247,10 @@ describe('RSSProcessor', () => {
       expect(result).toContain('Item 1 content') // content not translated (not in partial translations)
     })
 
-    it('should skip feed title translation when skipFeedTitle is true (default)', async () => {
+    it('should exclude feed title translation when excludeFeedTitle is true (default)', async () => {
       mockParserInstance.parseURL.mockResolvedValue(createMockFeed())
 
-      // Note: feed-title should NOT be in the translations since skipFeedTitle=true
+      // Note: feed-title should NOT be in the translations since excludeFeedTitle=true
       const mockTranslations = new Map([
         ['feed-description', 'テスト説明'],
         ['item-0-title', 'アイテム1タイトル'],
@@ -280,7 +280,7 @@ describe('RSSProcessor', () => {
       )
     })
 
-    it('should translate feed title when skipFeedTitle is false', async () => {
+    it('should translate feed title when excludeFeedTitle is false', async () => {
       mockParserInstance.parseURL.mockResolvedValue(createMockFeed())
 
       // All translations available

@@ -20,7 +20,7 @@ export class RSSProcessor {
     feedUrl: string,
     sourceLang: string,
     targetLang: string,
-    skipFeedTitle = true
+    excludeFeedTitle = true
   ): Promise<string | null> {
     try {
       // Fetch and parse RSS feed
@@ -30,7 +30,7 @@ export class RSSProcessor {
       const batchItems: BatchTranslateItem[] = []
 
       // Add feed metadata
-      if (feed.title && !skipFeedTitle) {
+      if (feed.title && !excludeFeedTitle) {
         batchItems.push({ id: 'feed-title', text: feed.title })
       }
       if (feed.description) {
@@ -62,7 +62,7 @@ export class RSSProcessor {
       )
 
       // Apply translations to feed metadata
-      if (feed.title && !skipFeedTitle && translations.has('feed-title')) {
+      if (feed.title && !excludeFeedTitle && translations.has('feed-title')) {
         feed.title = translations.get('feed-title') ?? feed.title
       }
       if (feed.description && translations.has('feed-description')) {

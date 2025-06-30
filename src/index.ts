@@ -69,7 +69,7 @@ export async function getApp() {
   app.get<{
     Querystring: TranslateRequest
   }>('/api', async (request, reply) => {
-    const { url, sourceLang, targetLang, skipFeedTitle } = request.query
+    const { url, sourceLang, targetLang, excludeFeedTitle } = request.query
 
     if (!url) {
       const response: TranslateResponse = {
@@ -80,15 +80,15 @@ export async function getApp() {
     }
 
     try {
-      const shouldSkipFeedTitle =
-        skipFeedTitle === 'true' ||
-        (skipFeedTitle === undefined && config.defaultSkipFeedTitle)
+      const shouldExcludeFeedTitle =
+        excludeFeedTitle === 'true' ||
+        (excludeFeedTitle === undefined && config.defaultExcludeFeedTitle)
 
       const translatedRSS = await rssProcessor.processRSSFeed(
         url,
         sourceLang ?? config.defaultSourceLang ?? 'auto',
         targetLang ?? config.defaultTargetLang ?? 'ja',
-        shouldSkipFeedTitle
+        shouldExcludeFeedTitle
       )
 
       if (!translatedRSS) {

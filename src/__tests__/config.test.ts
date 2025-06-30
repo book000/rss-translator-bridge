@@ -22,7 +22,7 @@ describe('loadConfig', () => {
     expect(config.host).toBe('0.0.0.0')
     expect(config.defaultSourceLang).toBe('auto')
     expect(config.defaultTargetLang).toBe('ja')
-    expect(config.defaultSkipFeedTitle).toBe(true)
+    expect(config.defaultExcludeFeedTitle).toBe(true)
   })
 
   it('should throw error when GAS_URL is not set', () => {
@@ -39,7 +39,7 @@ describe('loadConfig', () => {
     process.env.HOST = 'localhost'
     process.env.DEFAULT_SOURCE_LANG = 'en'
     process.env.DEFAULT_TARGET_LANG = 'ko'
-    process.env.DEFAULT_SKIP_FEED_TITLE = 'false'
+    process.env.DEFAULT_EXCLUDE_FEED_TITLE = 'false'
 
     const config = loadConfig()
 
@@ -47,7 +47,7 @@ describe('loadConfig', () => {
     expect(config.host).toBe('localhost')
     expect(config.defaultSourceLang).toBe('en')
     expect(config.defaultTargetLang).toBe('ko')
-    expect(config.defaultSkipFeedTitle).toBe(false)
+    expect(config.defaultExcludeFeedTitle).toBe(false)
   })
 
   it('should handle invalid PORT environment variable', () => {
@@ -115,49 +115,49 @@ describe('loadConfig', () => {
     expect(config.defaultTargetLang).toBe('  ko  ')
   })
 
-  describe('defaultSkipFeedTitle handling', () => {
+  describe('defaultExcludeFeedTitle handling', () => {
     beforeEach(() => {
       process.env.GAS_URL = 'https://example.com/gas'
     })
 
-    it('should default to true when DEFAULT_SKIP_FEED_TITLE is not set', () => {
-      delete process.env.DEFAULT_SKIP_FEED_TITLE
+    it('should default to true when DEFAULT_EXCLUDE_FEED_TITLE is not set', () => {
+      delete process.env.DEFAULT_EXCLUDE_FEED_TITLE
 
       const config = loadConfig()
 
-      expect(config.defaultSkipFeedTitle).toBe(true)
+      expect(config.defaultExcludeFeedTitle).toBe(true)
     })
 
-    it('should be true when DEFAULT_SKIP_FEED_TITLE is "true"', () => {
-      process.env.DEFAULT_SKIP_FEED_TITLE = 'true'
+    it('should be true when DEFAULT_EXCLUDE_FEED_TITLE is "true"', () => {
+      process.env.DEFAULT_EXCLUDE_FEED_TITLE = 'true'
 
       const config = loadConfig()
 
-      expect(config.defaultSkipFeedTitle).toBe(true)
+      expect(config.defaultExcludeFeedTitle).toBe(true)
     })
 
-    it('should be false when DEFAULT_SKIP_FEED_TITLE is "false"', () => {
-      process.env.DEFAULT_SKIP_FEED_TITLE = 'false'
+    it('should be false when DEFAULT_EXCLUDE_FEED_TITLE is "false"', () => {
+      process.env.DEFAULT_EXCLUDE_FEED_TITLE = 'false'
 
       const config = loadConfig()
 
-      expect(config.defaultSkipFeedTitle).toBe(false)
+      expect(config.defaultExcludeFeedTitle).toBe(false)
     })
 
-    it('should be true when DEFAULT_SKIP_FEED_TITLE is empty string', () => {
-      process.env.DEFAULT_SKIP_FEED_TITLE = ''
+    it('should be true when DEFAULT_EXCLUDE_FEED_TITLE is empty string', () => {
+      process.env.DEFAULT_EXCLUDE_FEED_TITLE = ''
 
       const config = loadConfig()
 
-      expect(config.defaultSkipFeedTitle).toBe(true)
+      expect(config.defaultExcludeFeedTitle).toBe(true)
     })
 
-    it('should be true when DEFAULT_SKIP_FEED_TITLE is any other value', () => {
-      process.env.DEFAULT_SKIP_FEED_TITLE = 'anything'
+    it('should be true when DEFAULT_EXCLUDE_FEED_TITLE is any other value', () => {
+      process.env.DEFAULT_EXCLUDE_FEED_TITLE = 'anything'
 
       const config = loadConfig()
 
-      expect(config.defaultSkipFeedTitle).toBe(true)
+      expect(config.defaultExcludeFeedTitle).toBe(true)
     })
   })
 })
