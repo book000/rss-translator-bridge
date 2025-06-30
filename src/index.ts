@@ -115,12 +115,7 @@ export async function getApp() {
     }
   }
 
-  // Main RSS translation API endpoint (legacy root path)
-  app.get<{
-    Querystring: TranslateRequest
-  }>('/', translateHandler)
-
-  // Main RSS translation API endpoint (new /api path)
+  // Main RSS translation API endpoint
   app.get<{
     Querystring: TranslateRequest
   }>('/api', translateHandler)

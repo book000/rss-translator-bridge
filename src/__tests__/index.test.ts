@@ -86,8 +86,7 @@ describe('RSS Translator Bridge API', () => {
       }
     }
 
-    // Register both routes
-    app.get('/', translateHandler)
+    // Register API route
     app.get('/api', translateHandler)
 
     await app.ready()
@@ -115,11 +114,11 @@ describe('RSS Translator Bridge API', () => {
     })
   })
 
-  describe('GET /', () => {
+  describe('GET /api', () => {
     it('should return 400 when URL parameter is missing', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/',
+        url: '/api',
       })
 
       expect(response.statusCode).toBe(400)
@@ -144,7 +143,7 @@ describe('RSS Translator Bridge API', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/?url=https://example.com/feed.xml',
+        url: '/api?url=https://example.com/feed.xml',
       })
 
       expect(response.statusCode).toBe(200)
@@ -167,7 +166,7 @@ describe('RSS Translator Bridge API', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/?url=https://example.com/feed.xml&sourceLang=en&targetLang=ko',
+        url: '/api?url=https://example.com/feed.xml&sourceLang=en&targetLang=ko',
       })
 
       expect(response.statusCode).toBe(200)
@@ -185,7 +184,7 @@ describe('RSS Translator Bridge API', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/?url=https://example.com/invalid.xml',
+        url: '/api?url=https://example.com/invalid.xml',
       })
 
       expect(response.statusCode).toBe(500)
@@ -204,7 +203,7 @@ describe('RSS Translator Bridge API', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/?url=https://example.com/feed.xml',
+        url: '/api?url=https://example.com/feed.xml',
       })
 
       expect(response.statusCode).toBe(500)
@@ -225,7 +224,7 @@ describe('RSS Translator Bridge API', () => {
       )
       const response = await app.inject({
         method: 'GET',
-        url: `/?url=${encodedUrl}`,
+        url: `/api?url=${encodedUrl}`,
       })
 
       expect(response.statusCode).toBe(200)
@@ -244,7 +243,7 @@ describe('RSS Translator Bridge API', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/?url=https://example.com/feed.xml&excludeFeedTitle=false',
+        url: '/api?url=https://example.com/feed.xml&excludeFeedTitle=false',
       })
 
       expect(response.statusCode).toBe(200)
@@ -263,7 +262,7 @@ describe('RSS Translator Bridge API', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/?url=https://example.com/feed.xml',
+        url: '/api?url=https://example.com/feed.xml',
       })
 
       expect(response.statusCode).toBe(200)
@@ -273,31 +272,6 @@ describe('RSS Translator Bridge API', () => {
         'auto',
         'ja',
         true
-      )
-    })
-  })
-
-  describe('GET /api', () => {
-    it('should work the same as GET / (legacy compatibility)', async () => {
-      const mockXML = '<rss>api translated content</rss>'
-      mockRSSProcessorInstance.processRSSFeed.mockResolvedValue(mockXML)
-
-      const response = await app.inject({
-        method: 'GET',
-        url: '/api?url=https://example.com/feed.xml&excludeFeedTitle=false',
-      })
-
-      expect(response.statusCode).toBe(200)
-      expect(response.headers['content-type']).toBe(
-        'application/rss+xml; charset=utf-8'
-      )
-      expect(response.body).toBe(mockXML)
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(mockRSSProcessorInstance.processRSSFeed).toHaveBeenCalledWith(
-        'https://example.com/feed.xml',
-        'auto',
-        'ja',
-        false
       )
     })
   })
