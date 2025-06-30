@@ -57,7 +57,7 @@ describe('RSSProcessor', () => {
 
     it('should process RSS feed successfully with translations', async () => {
       mockParserInstance.parseURL.mockResolvedValue(mockFeed)
-      
+
       const mockTranslations = new Map([
         ['feed-title', 'テストフィード'],
         ['feed-description', 'テスト説明'],
@@ -79,7 +79,11 @@ describe('RSSProcessor', () => {
       expect(result).toContain('テスト説明')
       expect(result).toContain('アイテム1タイトル')
       expect(result).toContain('アイテム2タイトル')
-      expect(mockParserInstance.parseURL).toHaveBeenCalledWith('https://example.com/feed.xml')
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockParserInstance.parseURL).toHaveBeenCalledWith(
+        'https://example.com/feed.xml'
+      )
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockTranslatorInstance.translateBatch).toHaveBeenCalledWith(
         expect.arrayContaining([
           { id: 'feed-title', text: 'Test Feed' },
@@ -101,7 +105,7 @@ describe('RSSProcessor', () => {
         items: [],
       }
       mockParserInstance.parseURL.mockResolvedValue(emptyFeed)
-      
+
       const mockTranslations = new Map([
         ['feed-title', 'エンプティフィード'],
         ['feed-description', 'エンプティ説明'],
@@ -116,6 +120,7 @@ describe('RSSProcessor', () => {
 
       expect(result).toBeDefined()
       expect(result).toContain('エンプティフィード')
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockTranslatorInstance.translateBatch).toHaveBeenCalledWith(
         [
           { id: 'feed-title', text: 'Empty Feed' },
@@ -145,6 +150,7 @@ describe('RSSProcessor', () => {
       )
 
       expect(result).toBeDefined()
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockTranslatorInstance.translateBatch).toHaveBeenCalledWith(
         [],
         'en',
@@ -167,8 +173,13 @@ describe('RSSProcessor', () => {
       mockParserInstance.parseURL.mockResolvedValue(feedWithMultipleContent)
       mockTranslatorInstance.translateBatch.mockResolvedValue(new Map())
 
-      await rssProcessor.processRSSFeed('https://example.com/feed.xml', 'en', 'ja')
+      await rssProcessor.processRSSFeed(
+        'https://example.com/feed.xml',
+        'en',
+        'ja'
+      )
 
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockTranslatorInstance.translateBatch).toHaveBeenCalledWith(
         expect.arrayContaining([
           { id: 'item-0-content', text: '<p>Content Encoded</p>' },
@@ -179,7 +190,9 @@ describe('RSSProcessor', () => {
     })
 
     it('should return null when RSS parsing fails', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
+        // no-op
+      })
       mockParserInstance.parseURL.mockRejectedValue(new Error('Invalid RSS'))
 
       const result = await rssProcessor.processRSSFeed(
@@ -193,9 +206,13 @@ describe('RSSProcessor', () => {
     })
 
     it('should return null when translation fails', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
+        // no-op
+      })
       mockParserInstance.parseURL.mockResolvedValue(mockFeed)
-      mockTranslatorInstance.translateBatch.mockRejectedValue(new Error('Translation failed'))
+      mockTranslatorInstance.translateBatch.mockRejectedValue(
+        new Error('Translation failed')
+      )
 
       const result = await rssProcessor.processRSSFeed(
         'https://example.com/feed.xml',
@@ -209,13 +226,15 @@ describe('RSSProcessor', () => {
 
     it('should handle partial translation failures gracefully', async () => {
       mockParserInstance.parseURL.mockResolvedValue(mockFeed)
-      
+
       // Only some translations succeed
       const partialTranslations = new Map([
         ['feed-title', 'テストフィード'],
         // missing other translations
       ])
-      mockTranslatorInstance.translateBatch.mockResolvedValue(partialTranslations)
+      mockTranslatorInstance.translateBatch.mockResolvedValue(
+        partialTranslations
+      )
 
       const result = await rssProcessor.processRSSFeed(
         'https://example.com/feed.xml',
@@ -245,7 +264,7 @@ describe('RSSProcessor', () => {
           },
         ],
       }
-      
+
       mockParserInstance.parseURL.mockResolvedValue(simpleFeed)
       mockTranslatorInstance.translateBatch.mockResolvedValue(new Map())
 
@@ -258,7 +277,9 @@ describe('RSSProcessor', () => {
       expect(result).toBeDefined()
       expect(result).toContain('<?xml version="1.0" encoding="UTF-8"')
       expect(result).toContain('<rss version="2.0"')
-      expect(result).toContain('xmlns:content="http://purl.org/rss/1.0/modules/content/"')
+      expect(result).toContain(
+        'xmlns:content="http://purl.org/rss/1.0/modules/content/"'
+      )
       expect(result).toContain('xmlns:dc="http://purl.org/dc/elements/1.1/"')
       expect(result).toContain('<channel>')
       expect(result).toContain('<title>Simple Feed</title>')
@@ -279,7 +300,7 @@ describe('RSSProcessor', () => {
           },
         ],
       }
-      
+
       mockParserInstance.parseURL.mockResolvedValue(feedWithExtras)
       mockTranslatorInstance.translateBatch.mockResolvedValue(new Map())
 

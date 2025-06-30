@@ -28,53 +28,52 @@ describe('RSS Translator Bridge API', () => {
     mockRSSProcessor.mockImplementation(() => mockRSSProcessorInstance)
 
     app = fastify({ logger: false })
-    await app.register(require('@fastify/cors'), { origin: true })
+    await app.register(import('@fastify/cors'), { origin: true })
 
     // Register routes (simplified version of the main app)
-    app.get('/health', async () => {
+    app.get('/health', () => {
       return { status: 'ok', timestamp: new Date().toISOString() }
     })
 
-    app.get<{ Querystring: { url?: string; sourceLang?: string; targetLang?: string } }>(
-      '/',
-      async (request, reply) => {
-        const { url, sourceLang, targetLang } = request.query
+    app.get<{
+      Querystring: { url?: string; sourceLang?: string; targetLang?: string }
+    }>('/', async (request, reply) => {
+      const { url, sourceLang, targetLang } = request.query
 
-        if (!url) {
-          return reply.code(400).send({
-            status: 'error',
-            error: 'URL parameter is required',
-          })
-        }
-
-        try {
-          const config = mockLoadConfig()
-          const rssProcessor = new RSSProcessor(config.gasUrl)
-          const translatedRSS = await rssProcessor.processRSSFeed(
-            url,
-            sourceLang ?? config.defaultSourceLang ?? 'auto',
-            targetLang ?? config.defaultTargetLang ?? 'ja'
-          )
-
-          if (!translatedRSS) {
-            return reply.code(500).send({
-              status: 'error',
-              error: 'Failed to process RSS feed',
-            })
-          }
-
-          return reply
-            .code(200)
-            .header('Content-Type', 'application/rss+xml; charset=utf-8')
-            .send(translatedRSS)
-        } catch (error) {
-          return reply.code(500).send({
-            status: 'error',
-            error: 'Internal server error',
-          })
-        }
+      if (!url) {
+        return await reply.code(400).send({
+          status: 'error',
+          error: 'URL parameter is required',
+        })
       }
-    )
+
+      try {
+        const config = mockLoadConfig()
+        const rssProcessor = new RSSProcessor(config.gasUrl)
+        const translatedRSS = await rssProcessor.processRSSFeed(
+          url,
+          sourceLang ?? config.defaultSourceLang ?? 'auto',
+          targetLang ?? config.defaultTargetLang ?? 'ja'
+        )
+
+        if (!translatedRSS) {
+          return await reply.code(500).send({
+            status: 'error',
+            error: 'Failed to process RSS feed',
+          })
+        }
+
+        return await reply
+          .code(200)
+          .header('Content-Type', 'application/rss+xml; charset=utf-8')
+          .send(translatedRSS)
+      } catch {
+        return await reply.code(500).send({
+          status: 'error',
+          error: 'Internal server error',
+        })
+      }
+    })
 
     await app.ready()
     jest.clearAllMocks()
@@ -92,7 +91,10 @@ describe('RSS Translator Bridge API', () => {
       })
 
       expect(response.statusCode).toBe(200)
-      const body = JSON.parse(response.body)
+      const body = JSON.parse(response.body) as {
+        status: string
+        timestamp: string
+      }
       expect(body.status).toBe('ok')
       expect(body.timestamp).toBeDefined()
     })
@@ -106,7 +108,10 @@ describe('RSS Translator Bridge API', () => {
       })
 
       expect(response.statusCode).toBe(400)
-      const body = JSON.parse(response.body)
+      const body = JSON.parse(response.body) as {
+        status: string
+        error: string
+      }
       expect(body.status).toBe('error')
       expect(body.error).toBe('URL parameter is required')
     })
@@ -128,8 +133,11 @@ describe('RSS Translator Bridge API', () => {
       })
 
       expect(response.statusCode).toBe(200)
-      expect(response.headers['content-type']).toBe('application/rss+xml; charset=utf-8')
+      expect(response.headers['content-type']).toBe(
+        'application/rss+xml; charset=utf-8'
+      )
       expect(response.body).toBe(mockXML)
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockRSSProcessorInstance.processRSSFeed).toHaveBeenCalledWith(
         'https://example.com/feed.xml',
         'auto',
@@ -147,6 +155,7 @@ describe('RSS Translator Bridge API', () => {
       })
 
       expect(response.statusCode).toBe(200)
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockRSSProcessorInstance.processRSSFeed).toHaveBeenCalledWith(
         'https://example.com/feed.xml',
         'en',
@@ -163,13 +172,18 @@ describe('RSS Translator Bridge API', () => {
       })
 
       expect(response.statusCode).toBe(500)
-      const body = JSON.parse(response.body)
+      const body = JSON.parse(response.body) as {
+        status: string
+        error: string
+      }
       expect(body.status).toBe('error')
       expect(body.error).toBe('Failed to process RSS feed')
     })
 
     it('should return 500 when an exception occurs', async () => {
-      mockRSSProcessorInstance.processRSSFeed.mockRejectedValue(new Error('Unexpected error'))
+      mockRSSProcessorInstance.processRSSFeed.mockRejectedValue(
+        new Error('Unexpected error')
+      )
 
       const response = await app.inject({
         method: 'GET',
@@ -177,7 +191,10 @@ describe('RSS Translator Bridge API', () => {
       })
 
       expect(response.statusCode).toBe(500)
-      const body = JSON.parse(response.body)
+      const body = JSON.parse(response.body) as {
+        status: string
+        error: string
+      }
       expect(body.status).toBe('error')
       expect(body.error).toBe('Internal server error')
     })
@@ -186,13 +203,16 @@ describe('RSS Translator Bridge API', () => {
       const mockXML = '<rss>encoded content</rss>'
       mockRSSProcessorInstance.processRSSFeed.mockResolvedValue(mockXML)
 
-      const encodedUrl = encodeURIComponent('https://example.com/feed with spaces.xml')
+      const encodedUrl = encodeURIComponent(
+        'https://example.com/feed with spaces.xml'
+      )
       const response = await app.inject({
         method: 'GET',
         url: `/?url=${encodedUrl}`,
       })
 
       expect(response.statusCode).toBe(200)
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(mockRSSProcessorInstance.processRSSFeed).toHaveBeenCalledWith(
         'https://example.com/feed with spaces.xml',
         'auto',

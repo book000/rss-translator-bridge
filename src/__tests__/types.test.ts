@@ -255,8 +255,12 @@ describe('Type Definitions', () => {
       }
 
       expect(rssObject.rss.$.version).toBe('2.0')
-      expect(rssObject.rss.$['xmlns:content']).toBe('http://purl.org/rss/1.0/modules/content/')
-      expect(rssObject.rss.$['xmlns:dc']).toBe('http://purl.org/dc/elements/1.1/')
+      expect(rssObject.rss.$['xmlns:content']).toBe(
+        'http://purl.org/rss/1.0/modules/content/'
+      )
+      expect(rssObject.rss.$['xmlns:dc']).toBe(
+        'http://purl.org/dc/elements/1.1/'
+      )
       expect(rssObject.rss.channel.title).toBe('Test Feed')
       expect(rssObject.rss.channel.item).toHaveLength(1)
     })

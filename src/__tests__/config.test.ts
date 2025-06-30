@@ -95,7 +95,7 @@ describe('loadConfig', () => {
 
     const config = loadConfig()
 
-    expect(config.port).toBe(99999) // should accept valid large port numbers
+    expect(config.port).toBe(99_999) // should accept valid large port numbers
   })
 
   it('should use environment variables as-is without trimming', () => {

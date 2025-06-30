@@ -45,7 +45,9 @@ describe('Translator', () => {
   })
 
   it('should return null on translation error', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
+      // no-op
+    })
     mockedAxios.post.mockRejectedValueOnce(new Error('Network error'))
 
     const result = await translator.translate('Hello', 'en', 'ja')
@@ -96,7 +98,9 @@ describe('Translator', () => {
   })
 
   it('should handle timeout error', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
+      // no-op
+    })
     const timeoutError = new Error('timeout')
     mockedAxios.post.mockRejectedValueOnce(timeoutError)
 
@@ -130,9 +134,19 @@ describe('Translator - Batch Translation', () => {
         total: 3,
         executionTime: 500,
         results: [
-          { id: 'item1', success: true, original: 'Hello', translated: 'こんにちは' },
+          {
+            id: 'item1',
+            success: true,
+            original: 'Hello',
+            translated: 'こんにちは',
+          },
           { id: 'item2', success: true, original: 'World', translated: '世界' },
-          { id: 'item3', success: true, original: 'How are you?', translated: '元気ですか？' },
+          {
+            id: 'item3',
+            success: true,
+            original: 'How are you?',
+            translated: '元気ですか？',
+          },
         ],
       },
     }
@@ -145,6 +159,7 @@ describe('Translator - Batch Translation', () => {
     expect(result.get('item1')).toBe('こんにちは')
     expect(result.get('item2')).toBe('世界')
     expect(result.get('item3')).toBe('元気ですか？')
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockedAxios.post).toHaveBeenCalledWith(
       'https://example.com/translate',
       {
@@ -156,7 +171,7 @@ describe('Translator - Batch Translation', () => {
       },
       expect.objectContaining({
         headers: { 'Content-Type': 'application/json' },
-        timeout: 25000,
+        timeout: 25_000,
       })
     )
   })
@@ -170,9 +185,24 @@ describe('Translator - Batch Translation', () => {
         total: 3,
         executionTime: 500,
         results: [
-          { id: 'item1', success: true, original: 'Hello', translated: 'こんにちは' },
-          { id: 'item2', success: false, original: 'World', error: 'Translation failed' },
-          { id: 'item3', success: true, original: 'How are you?', translated: '元気ですか？' },
+          {
+            id: 'item1',
+            success: true,
+            original: 'Hello',
+            translated: 'こんにちは',
+          },
+          {
+            id: 'item2',
+            success: false,
+            original: 'World',
+            error: 'Translation failed',
+          },
+          {
+            id: 'item3',
+            success: true,
+            original: 'How are you?',
+            translated: '元気ですか？',
+          },
         ],
       },
     }
@@ -202,6 +232,7 @@ describe('Translator - Batch Translation', () => {
     const result = await translator.translateBatch([], 'en', 'ja')
 
     expect(result.size).toBe(0)
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockedAxios.post).toHaveBeenCalledWith(
       'https://example.com/translate',
       {
@@ -212,7 +243,7 @@ describe('Translator - Batch Translation', () => {
         mode: 'html',
       },
       expect.objectContaining({
-        timeout: 25000,
+        timeout: 25_000,
       })
     )
   })
@@ -229,7 +260,9 @@ describe('Translator - Batch Translation', () => {
   })
 
   it('should return empty map on non-200 status', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
+      // no-op
+    })
     const mockResponse = {
       status: 500,
       data: {
@@ -249,7 +282,9 @@ describe('Translator - Batch Translation', () => {
   })
 
   it('should return empty map when response status is false', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
+      // no-op
+    })
     const mockResponse = {
       status: 200,
       data: {
@@ -277,23 +312,31 @@ describe('Translator - Batch Translation', () => {
     }
     mockedAxios.post.mockRejectedValueOnce(axiosError)
 
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
+      // no-op
+    })
 
     const result = await translator.translateBatch(mockBatchItems, 'en', 'ja')
 
     expect(result.size).toBe(3)
     expect(result.get('item1')).toBe('Hello')
-    expect(consoleSpy).toHaveBeenCalledWith('Batch translation error:', axiosError)
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Batch translation error:',
+      axiosError
+    )
     // Note: The error response details are logged only if error has response property
 
     consoleSpy.mockRestore()
   })
 
   it('should handle large batch efficiently', async () => {
-    const largeBatch: BatchTranslateItem[] = Array.from({ length: 100 }, (_, i) => ({
-      id: `item${i}`,
-      text: `Text ${i}`,
-    }))
+    const largeBatch: BatchTranslateItem[] = Array.from(
+      { length: 100 },
+      (_, i) => ({
+        id: `item${i}`,
+        text: `Text ${i}`,
+      })
+    )
 
     const mockResults = largeBatch.map((item) => ({
       id: item.id,
