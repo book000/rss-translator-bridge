@@ -29,6 +29,35 @@ export interface GASTranslateResponse {
   text: string
 }
 
+export interface BatchTranslateItem {
+  id: string
+  text: string
+}
+
+export interface GASBatchTranslateRequest {
+  batch: true
+  before: string
+  after: string
+  texts: BatchTranslateItem[]
+  mode: 'html'
+}
+
+export interface BatchTranslateResult {
+  id: string
+  original: string
+  translated: string
+  success: boolean
+  error?: string
+}
+
+export interface GASBatchTranslateResponse {
+  status: boolean
+  results: BatchTranslateResult[]
+  processed: number
+  total: number
+  executionTime: number
+}
+
 export interface RSSItem {
   title?: string
   link?: string
