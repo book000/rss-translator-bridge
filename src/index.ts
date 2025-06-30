@@ -1,4 +1,4 @@
-import fastify from 'fastify'
+import fastify, { FastifyRequest, FastifyReply } from 'fastify'
 import cors from '@fastify/cors'
 import staticPlugin from '@fastify/static'
 import { fileURLToPath } from 'node:url'
@@ -65,11 +65,12 @@ export async function getApp() {
     }
   })
 
-  // Main RSS translation API endpoint
-  app.get<{
-    Querystring: TranslateRequest
-  }>('/api', async (request, reply) => {
-    const { url, sourceLang, targetLang } = request.query
+  // Main RSS translation endpoint handler
+  const translateHandler = async (
+    request: FastifyRequest<{ Querystring: TranslateRequest }>,
+    reply: FastifyReply
+  ) => {
+    const { url, sourceLang, targetLang, excludeFeedTitle } = request.query
 
     if (!url) {
       const response: TranslateResponse = {
@@ -80,10 +81,15 @@ export async function getApp() {
     }
 
     try {
+      const shouldExcludeFeedTitle =
+        excludeFeedTitle === 'true' ||
+        (excludeFeedTitle === undefined && config.defaultExcludeFeedTitle)
+
       const translatedRSS = await rssProcessor.processRSSFeed(
         url,
         sourceLang ?? config.defaultSourceLang ?? 'auto',
-        targetLang ?? config.defaultTargetLang ?? 'ja'
+        targetLang ?? config.defaultTargetLang ?? 'ja',
+        shouldExcludeFeedTitle
       )
 
       if (!translatedRSS) {
@@ -107,7 +113,12 @@ export async function getApp() {
       }
       return await reply.code(500).send(response)
     }
-  })
+  }
+
+  // Main RSS translation API endpoint
+  app.get<{
+    Querystring: TranslateRequest
+  }>('/api', translateHandler)
 
   return app
 }

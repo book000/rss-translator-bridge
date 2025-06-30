@@ -1,6 +1,7 @@
-import fastify, { FastifyInstance } from 'fastify'
+import fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { loadConfig } from '../config'
 import { RSSProcessor } from '../rss-processor'
+import { TranslateRequest } from '../types'
 
 jest.mock('../config')
 jest.mock('../rss-processor')
@@ -19,6 +20,7 @@ describe('RSS Translator Bridge API', () => {
       host: '0.0.0.0',
       defaultSourceLang: 'auto',
       defaultTargetLang: 'ja',
+      defaultExcludeFeedTitle: true,
     })
 
     mockRSSProcessorInstance = {
@@ -27,33 +29,42 @@ describe('RSS Translator Bridge API', () => {
 
     mockRSSProcessor.mockImplementation(() => mockRSSProcessorInstance)
 
+    // Create a simplified test app with same logic
+    const config = mockLoadConfig()
     app = fastify({ logger: false })
     await app.register(import('@fastify/cors'), { origin: true })
 
-    // Register routes (simplified version of the main app)
+    const rssProcessor = new RSSProcessor(config.gasUrl)
+
+    // Health check endpoint
     app.get('/health', () => {
       return { status: 'ok', timestamp: new Date().toISOString() }
     })
 
-    app.get<{
-      Querystring: { url?: string; sourceLang?: string; targetLang?: string }
-    }>('/', async (request, reply) => {
-      const { url, sourceLang, targetLang } = request.query
+    // Translation endpoint handler
+    const translateHandler = async (
+      request: FastifyRequest<{ Querystring: TranslateRequest }>,
+      reply: FastifyReply
+    ) => {
+      const { url, sourceLang, targetLang, excludeFeedTitle } = request.query
 
       if (!url) {
-        return await reply.code(400).send({
+        return reply.code(400).send({
           status: 'error',
           error: 'URL parameter is required',
         })
       }
 
       try {
-        const config = mockLoadConfig()
-        const rssProcessor = new RSSProcessor(config.gasUrl)
+        const shouldExcludeFeedTitle =
+          excludeFeedTitle === 'true' ||
+          (excludeFeedTitle === undefined && config.defaultExcludeFeedTitle)
+
         const translatedRSS = await rssProcessor.processRSSFeed(
           url,
           sourceLang ?? config.defaultSourceLang ?? 'auto',
-          targetLang ?? config.defaultTargetLang ?? 'ja'
+          targetLang ?? config.defaultTargetLang ?? 'ja',
+          shouldExcludeFeedTitle
         )
 
         if (!translatedRSS) {
@@ -73,7 +84,10 @@ describe('RSS Translator Bridge API', () => {
           error: 'Internal server error',
         })
       }
-    })
+    }
+
+    // Register API route
+    app.get('/api', translateHandler)
 
     await app.ready()
     jest.clearAllMocks()
@@ -100,11 +114,11 @@ describe('RSS Translator Bridge API', () => {
     })
   })
 
-  describe('GET /', () => {
+  describe('GET /api', () => {
     it('should return 400 when URL parameter is missing', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/',
+        url: '/api',
       })
 
       expect(response.statusCode).toBe(400)
@@ -129,7 +143,7 @@ describe('RSS Translator Bridge API', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/?url=https://example.com/feed.xml',
+        url: '/api?url=https://example.com/feed.xml',
       })
 
       expect(response.statusCode).toBe(200)
@@ -141,7 +155,8 @@ describe('RSS Translator Bridge API', () => {
       expect(mockRSSProcessorInstance.processRSSFeed).toHaveBeenCalledWith(
         'https://example.com/feed.xml',
         'auto',
-        'ja'
+        'ja',
+        true
       )
     })
 
@@ -151,7 +166,7 @@ describe('RSS Translator Bridge API', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/?url=https://example.com/feed.xml&sourceLang=en&targetLang=ko',
+        url: '/api?url=https://example.com/feed.xml&sourceLang=en&targetLang=ko',
       })
 
       expect(response.statusCode).toBe(200)
@@ -159,7 +174,8 @@ describe('RSS Translator Bridge API', () => {
       expect(mockRSSProcessorInstance.processRSSFeed).toHaveBeenCalledWith(
         'https://example.com/feed.xml',
         'en',
-        'ko'
+        'ko',
+        true
       )
     })
 
@@ -168,7 +184,7 @@ describe('RSS Translator Bridge API', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/?url=https://example.com/invalid.xml',
+        url: '/api?url=https://example.com/invalid.xml',
       })
 
       expect(response.statusCode).toBe(500)
@@ -187,7 +203,7 @@ describe('RSS Translator Bridge API', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/?url=https://example.com/feed.xml',
+        url: '/api?url=https://example.com/feed.xml',
       })
 
       expect(response.statusCode).toBe(500)
@@ -208,7 +224,7 @@ describe('RSS Translator Bridge API', () => {
       )
       const response = await app.inject({
         method: 'GET',
-        url: `/?url=${encodedUrl}`,
+        url: `/api?url=${encodedUrl}`,
       })
 
       expect(response.statusCode).toBe(200)
@@ -216,7 +232,46 @@ describe('RSS Translator Bridge API', () => {
       expect(mockRSSProcessorInstance.processRSSFeed).toHaveBeenCalledWith(
         'https://example.com/feed with spaces.xml',
         'auto',
-        'ja'
+        'ja',
+        true
+      )
+    })
+
+    it('should use excludeFeedTitle parameter when provided', async () => {
+      const mockXML = '<rss>translated without feed title</rss>'
+      mockRSSProcessorInstance.processRSSFeed.mockResolvedValue(mockXML)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api?url=https://example.com/feed.xml&excludeFeedTitle=false',
+      })
+
+      expect(response.statusCode).toBe(200)
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockRSSProcessorInstance.processRSSFeed).toHaveBeenCalledWith(
+        'https://example.com/feed.xml',
+        'auto',
+        'ja',
+        false
+      )
+    })
+
+    it('should default excludeFeedTitle to true when not provided', async () => {
+      const mockXML = '<rss>translated with default settings</rss>'
+      mockRSSProcessorInstance.processRSSFeed.mockResolvedValue(mockXML)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api?url=https://example.com/feed.xml',
+      })
+
+      expect(response.statusCode).toBe(200)
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockRSSProcessorInstance.processRSSFeed).toHaveBeenCalledWith(
+        'https://example.com/feed.xml',
+        'auto',
+        'ja',
+        true
       )
     })
   })

@@ -4,12 +4,14 @@ export interface Config {
   host?: string
   defaultSourceLang?: string
   defaultTargetLang?: string
+  defaultExcludeFeedTitle?: boolean
 }
 
 export interface TranslateRequest {
   url: string
   sourceLang?: string
   targetLang?: string
+  excludeFeedTitle?: string
 }
 
 export interface TranslateResponse {

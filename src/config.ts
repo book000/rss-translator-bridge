@@ -12,5 +12,6 @@ export function loadConfig(): Config {
     host: process.env.HOST ?? '0.0.0.0',
     defaultSourceLang: process.env.DEFAULT_SOURCE_LANG ?? 'auto',
     defaultTargetLang: process.env.DEFAULT_TARGET_LANG ?? 'ja',
+    defaultExcludeFeedTitle: process.env.DEFAULT_EXCLUDE_FEED_TITLE !== 'false',
   }
 }
