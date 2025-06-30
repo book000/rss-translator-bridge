@@ -1,6 +1,7 @@
-import fastify, { FastifyInstance } from 'fastify'
+import fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { loadConfig } from '../config'
 import { RSSProcessor } from '../rss-processor'
+import { TranslateRequest } from '../types'
 
 jest.mock('../config')
 jest.mock('../rss-processor')
@@ -41,7 +42,10 @@ describe('RSS Translator Bridge API', () => {
     })
 
     // Translation endpoint handler
-    const translateHandler = async (request: any, reply: any) => {
+    const translateHandler = async (
+      request: FastifyRequest<{ Querystring: TranslateRequest }>,
+      reply: FastifyReply
+    ) => {
       const { url, sourceLang, targetLang, excludeFeedTitle } = request.query
 
       if (!url) {
@@ -64,18 +68,18 @@ describe('RSS Translator Bridge API', () => {
         )
 
         if (!translatedRSS) {
-          return reply.code(500).send({
+          return await reply.code(500).send({
             status: 'error',
             error: 'Failed to process RSS feed',
           })
         }
 
-        return reply
+        return await reply
           .code(200)
           .header('Content-Type', 'application/rss+xml; charset=utf-8')
           .send(translatedRSS)
       } catch {
-        return reply.code(500).send({
+        return await reply.code(500).send({
           status: 'error',
           error: 'Internal server error',
         })
