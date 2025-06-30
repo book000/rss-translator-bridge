@@ -1,7 +1,7 @@
 import RSSParser from 'rss-parser'
 import xml2js from 'xml2js'
 import { Translator } from './translator.js'
-import { RSSFeed, RSSItem, RSSObject } from './types.js'
+import { RSSFeed, RSSItem, RSSObject, BatchTranslateItem } from './types.js'
 
 export class RSSProcessor {
   private parser: RSSParser
@@ -25,64 +25,71 @@ export class RSSProcessor {
       // Fetch and parse RSS feed
       const feed = await this.parser.parseURL(feedUrl)
 
-      // Translate feed title
+      // Prepare all texts for batch translation
+      const batchItems: BatchTranslateItem[] = []
+      
+      // Add feed metadata
       if (feed.title) {
-        const translatedTitle = await this.translator.translate(
-          feed.title,
-          sourceLang,
-          targetLang
-        )
-        if (translatedTitle) {
-          feed.title = translatedTitle
-        }
+        batchItems.push({ id: 'feed-title', text: feed.title })
       }
-
-      // Translate feed description
       if (feed.description) {
-        const translatedDescription = await this.translator.translate(
-          feed.description,
-          sourceLang,
-          targetLang
-        )
-        if (translatedDescription) {
-          feed.description = translatedDescription
-        }
+        batchItems.push({ id: 'feed-description', text: feed.description })
       }
-
-      // Translate items
+      
+      // Add all feed items (no limit for full translation)
       if (feed.items && feed.items.length > 0) {
-        for (const item of feed.items) {
-          // Translate title
+        feed.items.forEach((item, index) => {
           if (item.title) {
-            const translatedTitle = await this.translator.translate(
-              item.title,
-              sourceLang,
-              targetLang
-            )
-            if (translatedTitle) {
-              item.title = translatedTitle
-            }
+            batchItems.push({ id: `item-${index}-title`, text: item.title })
           }
-
-          // Translate content/description
+          
           const content = item.contentEncoded || item.content || item.summary
           if (content) {
-            const translatedContent = await this.translator.translate(
-              content,
-              sourceLang,
-              targetLang
-            )
-            if (translatedContent) {
-              if (item.contentEncoded) {
-                item.contentEncoded = translatedContent
-              } else if (item.content) {
-                item.content = translatedContent
-              } else if (item.summary) {
-                item.summary = translatedContent
-              }
+            batchItems.push({ id: `item-${index}-content`, text: content })
+          }
+        })
+      }
+      
+      console.log(`Preparing batch translation for ${batchItems.length} items`)
+      
+      // Perform batch translation
+      const translations = await this.translator.translateBatch(
+        batchItems,
+        sourceLang,
+        targetLang
+      )
+      
+      // Apply translations to feed metadata
+      if (feed.title && translations.has('feed-title')) {
+        feed.title = translations.get('feed-title') || feed.title
+      }
+      if (feed.description && translations.has('feed-description')) {
+        feed.description = translations.get('feed-description') || feed.description
+      }
+      
+      // Apply translations to feed items
+      if (feed.items && feed.items.length > 0) {
+        feed.items.forEach((item, index) => {
+          const titleKey = `item-${index}-title`
+          const contentKey = `item-${index}-content`
+          
+          if (item.title && translations.has(titleKey)) {
+            item.title = translations.get(titleKey) || item.title
+          }
+          
+          const content = item.contentEncoded || item.content || item.summary
+          if (content && translations.has(contentKey)) {
+            const translatedContent = translations.get(contentKey) || content
+            
+            if (item.contentEncoded) {
+              item.contentEncoded = translatedContent
+            } else if (item.content) {
+              item.content = translatedContent
+            } else if (item.summary) {
+              item.summary = translatedContent
             }
           }
-        }
+        })
       }
 
       // Convert back to XML
