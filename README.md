@@ -1,8 +1,5 @@
 # RSS Translator Bridge
 
-[![CI](https://github.com/book000/rss-translator-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/book000/rss-translator-bridge/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
 RSS フィードを多言語翻訳するための高速ブリッジサーバーです。Google Apps Script（GAS）翻訳 API を使用してバッチ翻訳を行い、翻訳済みの RSS フィードを XML 形式で配信します。
 
 ## ✨ 特徴
@@ -270,9 +267,6 @@ GET /?url=https://example.com/feed.xml&sourceLang=en&targetLang=ja
 - Jest による包括的なテスト
 - Conventional Commits によるコミットメッセージ
 
-## 📄 ライセンス
-
-MIT License - 詳細は [LICENSE](LICENSE) ファイルを参照してください。
 
 ---
 
