@@ -6,12 +6,17 @@ class RSSTranslator {
     this.errorSection = document.querySelector('#errorSection')
     this.performanceSection = document.querySelector('#performanceSection')
     this.resultsSection = document.querySelector('#resultsSection')
+    this.requestUrlInput = document.querySelector('#requestUrl')
+    this.copyUrlBtn = document.querySelector('#copyUrlBtn')
+    this.openUrlBtn = document.querySelector('#openUrlBtn')
 
     this.init()
   }
 
   init() {
     this.form.addEventListener('submit', this.handleSubmit.bind(this))
+    this.copyUrlBtn.addEventListener('click', this.copyUrl.bind(this))
+    this.openUrlBtn.addEventListener('click', this.openUrl.bind(this))
   }
 
   async handleSubmit(event) {
@@ -101,6 +106,9 @@ class RSSTranslator {
       targetLang: targetLang || 'ja',
     })
 
+    const requestUrl = `${globalThis.location.origin}/api?${parameters}`
+    this.currentRequestUrl = requestUrl
+
     const response = await fetch(`/api?${parameters}`)
 
     if (!response.ok) {
@@ -142,6 +150,11 @@ class RSSTranslator {
     document.querySelector('#startTime').textContent =
       startTime.toLocaleString()
 
+    // リクエストURLを表示
+    if (this.currentRequestUrl) {
+      this.requestUrlInput.value = this.currentRequestUrl
+    }
+
     // XML内容を表示（シンタックスハイライト付き）
     document.querySelector('#originalXml').querySelector('code').innerHTML =
       this.highlightXML(originalXml)
@@ -160,6 +173,12 @@ class RSSTranslator {
 
     // パフォーマンス情報にエラー状態を表示
     document.querySelector('#status').textContent = 'エラー'
+
+    // リクエストURLを表示（エラーの場合でも）
+    if (this.currentRequestUrl) {
+      this.requestUrlInput.value = this.currentRequestUrl
+    }
+
     this.performanceSection.style.display = 'block'
   }
 
@@ -221,6 +240,32 @@ class RSSTranslator {
 
     return result.trim()
   }
+
+  // URLをクリップボードにコピー
+  async copyUrl() {
+    if (!this.currentRequestUrl) return
+
+    try {
+      await navigator.clipboard.writeText(this.currentRequestUrl)
+      // 一時的にボタンテキストを変更してフィードバック
+      const originalText = this.copyUrlBtn.textContent
+      this.copyUrlBtn.textContent = '✓'
+      setTimeout(() => {
+        this.copyUrlBtn.textContent = originalText
+      }, 1000)
+    } catch (error) {
+      console.error('コピーに失敗しました:', error)
+      // フォールバック: 選択状態にする
+      this.requestUrlInput.select()
+      this.requestUrlInput.setSelectionRange(0, 99_999)
+    }
+  }
+
+  // URLを新しいタブで開く
+  openUrl() {
+    if (!this.currentRequestUrl) return
+    globalThis.open(this.currentRequestUrl, '_blank')
+  }
 }
 
 // アプリケーション初期化
@@ -230,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
 })
 
 // パフォーマンス計測の詳細表示
-window.addEventListener('load', () => {
+globalThis.addEventListener('load', () => {
   const perfEntries = performance.getEntriesByType('navigation')
   if (perfEntries.length > 0) {
     const perfData = perfEntries[0]
