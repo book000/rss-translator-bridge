@@ -3,14 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RSS Translator Bridge</title>
+    <title>book000/rss-translator-bridge</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="container">
       <header>
-        <h1>RSS Translator Bridge</h1>
-        <p>RSSフィードを翻訳してご利用いただけます</p>
+        <h1>book000/rss-translator-bridge</h1>
       </header>
 
       <div class="form-section">
@@ -62,7 +61,7 @@
         class="performance-section"
         id="performanceSection"
         style="display: none">
-        <h3>パフォーマンス情報</h3>
+        <h3>リクエスト情報</h3>
         <div class="performance-info">
           <div class="performance-item">
             <span class="label">レスポンス時間:</span>
@@ -75,6 +74,18 @@
           <div class="performance-item">
             <span class="label">処理開始時刻:</span>
             <span id="startTime">-</span>
+          </div>
+          <div class="performance-item url-item">
+            <span class="label">APIエンドポイントURL:</span>
+            <div class="url-controls">
+              <input type="text" id="requestUrl" readonly />
+              <button type="button" id="copyUrlBtn" title="URLをコピー">
+                📋
+              </button>
+              <button type="button" id="openUrlBtn" title="別タブで開く">
+                🔗
+              </button>
+            </div>
           </div>
         </div>
       </div>

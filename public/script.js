@@ -6,12 +6,17 @@ class RSSTranslator {
     this.errorSection = document.querySelector('#errorSection')
     this.performanceSection = document.querySelector('#performanceSection')
     this.resultsSection = document.querySelector('#resultsSection')
+    this.requestUrlInput = document.querySelector('#requestUrl')
+    this.copyUrlBtn = document.querySelector('#copyUrlBtn')
+    this.openUrlBtn = document.querySelector('#openUrlBtn')
 
     this.init()
   }
 
   init() {
     this.form.addEventListener('submit', this.handleSubmit.bind(this))
+    this.copyUrlBtn.addEventListener('click', this.copyUrl.bind(this))
+    this.openUrlBtn.addEventListener('click', this.openUrl.bind(this))
   }
 
   async handleSubmit(event) {
@@ -44,7 +49,7 @@ class RSSTranslator {
       )
 
       // 並行で実行
-      const [originalRss, translatedRss] = await Promise.all([
+      const [originalRss, translatedResult] = await Promise.all([
         originalRssPromise,
         translatedRssPromise,
       ])
@@ -52,10 +57,19 @@ class RSSTranslator {
       const endTime = performance.now()
       const responseTime = endTime - startTime
 
-      this.showResults(originalRss, translatedRss, responseTime, startDateTime)
+      this.showResults(
+        originalRss,
+        translatedResult.text,
+        responseTime,
+        startDateTime,
+        translatedResult.status
+      )
     } catch (error) {
       console.error('Translation error:', error)
-      this.showError(error.message || '翻訳処理中にエラーが発生しました')
+      this.showError(
+        error.message || '翻訳処理中にエラーが発生しました',
+        error.status
+      )
     } finally {
       this.endTranslation()
     }
@@ -101,13 +115,18 @@ class RSSTranslator {
       targetLang: targetLang || 'ja',
     })
 
+    const requestUrl = `${globalThis.location.origin}/api?${parameters}`
+    this.currentRequestUrl = requestUrl
+
     const response = await fetch(`/api?${parameters}`)
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(
+      const error = new Error(
         errorData.error || `HTTP ${response.status}: ${response.statusText}`
       )
+      error.status = response.status
+      throw error
     }
 
     const contentType = response.headers.get('content-type')
@@ -116,7 +135,11 @@ class RSSTranslator {
       throw new Error(errorData.error || '翻訳処理でエラーが発生しました')
     }
 
-    return await response.text()
+    const text = await response.text()
+    return {
+      text,
+      status: response.status,
+    }
   }
 
   startTranslation() {
@@ -134,13 +157,24 @@ class RSSTranslator {
     this.loadingSection.style.display = 'none'
   }
 
-  showResults(originalXml, translatedXml, responseTime, startTime) {
+  showResults(
+    originalXml,
+    translatedXml,
+    responseTime,
+    startTime,
+    httpStatus = 200
+  ) {
     // パフォーマンス情報を表示
     document.querySelector('#responseTime').textContent =
       `${responseTime.toFixed(2)}ms`
-    document.querySelector('#status').textContent = '成功'
+    document.querySelector('#status').textContent = `成功 (HTTP ${httpStatus})`
     document.querySelector('#startTime').textContent =
       startTime.toLocaleString()
+
+    // リクエストURLを表示
+    if (this.currentRequestUrl) {
+      this.requestUrlInput.value = this.currentRequestUrl
+    }
 
     // XML内容を表示（シンタックスハイライト付き）
     document.querySelector('#originalXml').querySelector('code').innerHTML =
@@ -152,14 +186,21 @@ class RSSTranslator {
     this.resultsSection.style.display = 'block'
   }
 
-  showError(message) {
+  showError(message, httpStatus) {
     document.querySelector('#errorMessage').textContent = message
     this.errorSection.style.display = 'block'
     this.performanceSection.style.display = 'none'
     this.resultsSection.style.display = 'none'
 
     // パフォーマンス情報にエラー状態を表示
-    document.querySelector('#status').textContent = 'エラー'
+    const statusText = httpStatus ? `エラー (HTTP ${httpStatus})` : 'エラー'
+    document.querySelector('#status').textContent = statusText
+
+    // リクエストURLを表示（エラーの場合でも）
+    if (this.currentRequestUrl) {
+      this.requestUrlInput.value = this.currentRequestUrl
+    }
+
     this.performanceSection.style.display = 'block'
   }
 
@@ -221,6 +262,32 @@ class RSSTranslator {
 
     return result.trim()
   }
+
+  // URLをクリップボードにコピー
+  async copyUrl() {
+    if (!this.currentRequestUrl) return
+
+    try {
+      await navigator.clipboard.writeText(this.currentRequestUrl)
+      // 一時的にボタンテキストを変更してフィードバック
+      const originalText = this.copyUrlBtn.textContent
+      this.copyUrlBtn.textContent = '✓'
+      setTimeout(() => {
+        this.copyUrlBtn.textContent = originalText
+      }, 1000)
+    } catch (error) {
+      console.error('コピーに失敗しました:', error)
+      // フォールバック: 選択状態にする
+      this.requestUrlInput.select()
+      this.requestUrlInput.setSelectionRange(0, 99_999)
+    }
+  }
+
+  // URLを新しいタブで開く
+  openUrl() {
+    if (!this.currentRequestUrl) return
+    globalThis.open(this.currentRequestUrl, '_blank')
+  }
 }
 
 // アプリケーション初期化
@@ -230,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
 })
 
 // パフォーマンス計測の詳細表示
-window.addEventListener('load', () => {
+globalThis.addEventListener('load', () => {
   const perfEntries = performance.getEntriesByType('navigation')
   if (perfEntries.length > 0) {
     const perfData = perfEntries[0]
