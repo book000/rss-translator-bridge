@@ -27,7 +27,7 @@ export class RSSProcessor {
 
       // Prepare all texts for batch translation
       const batchItems: BatchTranslateItem[] = []
-      
+
       // Add feed metadata
       if (feed.title) {
         batchItems.push({ id: 'feed-title', text: feed.title })
@@ -35,52 +35,55 @@ export class RSSProcessor {
       if (feed.description) {
         batchItems.push({ id: 'feed-description', text: feed.description })
       }
-      
+
       // Add all feed items (no limit for full translation)
-      if (feed.items && feed.items.length > 0) {
-        feed.items.forEach((item, index) => {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (feed.items?.length) {
+        for (const [index, item] of feed.items.entries()) {
           if (item.title) {
             batchItems.push({ id: `item-${index}-title`, text: item.title })
           }
-          
-          const content = item.contentEncoded || item.content || item.summary
+
+          const content = item.contentEncoded ?? item.content ?? item.summary
           if (content) {
             batchItems.push({ id: `item-${index}-content`, text: content })
           }
-        })
+        }
       }
-      
+
       console.log(`Preparing batch translation for ${batchItems.length} items`)
-      
+
       // Perform batch translation
       const translations = await this.translator.translateBatch(
         batchItems,
         sourceLang,
         targetLang
       )
-      
+
       // Apply translations to feed metadata
       if (feed.title && translations.has('feed-title')) {
-        feed.title = translations.get('feed-title') || feed.title
+        feed.title = translations.get('feed-title') ?? feed.title
       }
       if (feed.description && translations.has('feed-description')) {
-        feed.description = translations.get('feed-description') || feed.description
+        feed.description =
+          translations.get('feed-description') ?? feed.description
       }
-      
+
       // Apply translations to feed items
-      if (feed.items && feed.items.length > 0) {
-        feed.items.forEach((item, index) => {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (feed.items?.length) {
+        for (const [index, item] of feed.items.entries()) {
           const titleKey = `item-${index}-title`
           const contentKey = `item-${index}-content`
-          
+
           if (item.title && translations.has(titleKey)) {
-            item.title = translations.get(titleKey) || item.title
+            item.title = translations.get(titleKey) ?? item.title
           }
-          
-          const content = item.contentEncoded || item.content || item.summary
+
+          const content = item.contentEncoded ?? item.content ?? item.summary
           if (content && translations.has(contentKey)) {
-            const translatedContent = translations.get(contentKey) || content
-            
+            const translatedContent = translations.get(contentKey) ?? content
+
             if (item.contentEncoded) {
               item.contentEncoded = translatedContent
             } else if (item.content) {
@@ -89,7 +92,7 @@ export class RSSProcessor {
               item.summary = translatedContent
             }
           }
-        })
+        }
       }
 
       // Convert back to XML
@@ -110,11 +113,11 @@ export class RSSProcessor {
           'xmlns:dc': 'http://purl.org/dc/elements/1.1/',
         },
         channel: {
-          title: feedData.title || '',
-          link: feedData.link || '',
-          description: feedData.description || '',
-          language: feedData.language || '',
-          lastBuildDate: feedData.lastBuildDate || new Date().toUTCString(),
+          title: feedData.title ?? '',
+          link: feedData.link ?? '',
+          description: feedData.description ?? '',
+          language: feedData.language ?? '',
+          lastBuildDate: feedData.lastBuildDate ?? new Date().toUTCString(),
           item: [],
         },
       },
@@ -132,11 +135,11 @@ export class RSSProcessor {
           'content:encoded'?: string
           'dc:creator'?: string
         } = {
-          title: item.title || '',
-          link: item.link || '',
-          description: item.summary || item.content || '',
-          pubDate: item.pubDate || '',
-          guid: item.guid || item.link || '',
+          title: item.title ?? '',
+          link: item.link ?? '',
+          description: item.summary ?? item.content ?? '',
+          pubDate: item.pubDate ?? '',
+          guid: item.guid ?? item.link ?? '',
         }
 
         // Add content:encoded if available

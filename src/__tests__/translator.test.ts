@@ -15,13 +15,19 @@ describe('Translator', () => {
   it('should translate text successfully', async () => {
     const mockResponse = {
       status: 200,
-      data: { text: 'こんにちは' },
+      data: {
+        response: {
+          status: true,
+          result: 'こんにちは',
+        },
+      },
     }
     mockedAxios.post.mockResolvedValueOnce(mockResponse)
 
     const result = await translator.translate('Hello', 'en', 'ja')
 
     expect(result).toBe('こんにちは')
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(mockedAxios.post).toHaveBeenCalledWith(
       'https://example.com/translate',
       {
@@ -32,7 +38,7 @@ describe('Translator', () => {
       },
       expect.objectContaining({
         headers: { 'Content-Type': 'application/json' },
-        timeout: 30000,
+        timeout: 5000,
       })
     )
   })

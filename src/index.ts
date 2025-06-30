@@ -1,6 +1,6 @@
 import fastify from 'fastify'
 import cors from '@fastify/cors'
-import { IncomingMessage, ServerResponse } from 'http'
+import { IncomingMessage, ServerResponse } from 'node:http'
 import { loadConfig } from './config.js'
 import { RSSProcessor } from './rss-processor.js'
 import { TranslateRequest, TranslateResponse } from './types.js'
@@ -40,8 +40,8 @@ async function start() {
     try {
       const translatedRSS = await rssProcessor.processRSSFeed(
         url,
-        sourceLang || config.defaultSourceLang || 'auto',
-        targetLang || config.defaultTargetLang || 'ja'
+        sourceLang ?? config.defaultSourceLang ?? 'auto',
+        targetLang ?? config.defaultTargetLang ?? 'ja'
       )
 
       if (!translatedRSS) {
@@ -49,11 +49,11 @@ async function start() {
           status: 'error',
           error: 'Failed to process RSS feed',
         }
-        return reply.code(500).send(response)
+        return await reply.code(500).send(response)
       }
 
       // Return translated RSS as XML
-      return reply
+      return await reply
         .code(200)
         .header('Content-Type', 'application/rss+xml; charset=utf-8')
         .send(translatedRSS)
@@ -63,20 +63,20 @@ async function start() {
         status: 'error',
         error: 'Internal server error',
       }
-      return reply.code(500).send(response)
+      return await reply.code(500).send(response)
     }
   })
 
   // Start server
   try {
     await app.listen({
-      port: config.port || 3000,
-      host: config.host || '0.0.0.0',
+      port: config.port ?? 3000,
+      host: config.host ?? '0.0.0.0',
     })
     app.log.info(`Server listening on ${config.host}:${config.port}`)
-  } catch (err) {
-    app.log.error(err)
-    process.exit(1)
+  } catch (error) {
+    app.log.error(error)
+    throw new Error('Failed to start server')
   }
 }
 
@@ -112,8 +112,8 @@ export default async function handler(
     try {
       const translatedRSS = await rssProcessor.processRSSFeed(
         url,
-        sourceLang || config.defaultSourceLang || 'auto',
-        targetLang || config.defaultTargetLang || 'ja'
+        sourceLang ?? config.defaultSourceLang ?? 'auto',
+        targetLang ?? config.defaultTargetLang ?? 'ja'
       )
 
       if (!translatedRSS) {
@@ -121,19 +121,19 @@ export default async function handler(
           status: 'error',
           error: 'Failed to process RSS feed',
         }
-        return reply.code(500).send(response)
+        return await reply.code(500).send(response)
       }
 
-      return reply
+      return await reply
         .code(200)
         .header('Content-Type', 'application/rss+xml; charset=utf-8')
         .send(translatedRSS)
-    } catch (error) {
+    } catch {
       const response: TranslateResponse = {
         status: 'error',
         error: 'Internal server error',
       }
-      return reply.code(500).send(response)
+      return await reply.code(500).send(response)
     }
   })
 
@@ -143,5 +143,8 @@ export default async function handler(
 
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  void start()
+  start().catch((error: unknown) => {
+    console.error('Failed to start server:', error)
+    throw error
+  })
 }

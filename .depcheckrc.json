@@ -1,0 +1,4 @@
+{
+  "ignores": ["@types/jest", "ts-jest"],
+  "ignore-patterns": ["dist", "coverage"]
+}
