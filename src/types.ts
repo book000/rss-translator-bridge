@@ -5,6 +5,7 @@ export interface Config {
   defaultSourceLang?: string
   defaultTargetLang?: string
   defaultExcludeFeedTitle?: boolean
+  defaultExcludeItemTitle?: boolean
 }
 
 export interface TranslateRequest {
@@ -12,6 +13,7 @@ export interface TranslateRequest {
   sourceLang?: string
   targetLang?: string
   excludeFeedTitle?: string
+  excludeItemTitle?: string
 }
 
 export interface TranslateResponse {

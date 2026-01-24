@@ -70,7 +70,8 @@ export async function getApp() {
     request: FastifyRequest<{ Querystring: TranslateRequest }>,
     reply: FastifyReply
   ) => {
-    const { url, sourceLang, targetLang, excludeFeedTitle } = request.query
+    const { url, sourceLang, targetLang, excludeFeedTitle, excludeItemTitle } =
+      request.query
 
     if (!url) {
       const response: TranslateResponse = {
@@ -85,11 +86,16 @@ export async function getApp() {
         excludeFeedTitle === 'true' ||
         (excludeFeedTitle === undefined && config.defaultExcludeFeedTitle)
 
+      const shouldExcludeItemTitle =
+        excludeItemTitle === 'true' ||
+        (excludeItemTitle === undefined && config.defaultExcludeItemTitle)
+
       const translatedRSS = await rssProcessor.processRSSFeed(
         url,
         sourceLang ?? config.defaultSourceLang ?? 'auto',
         targetLang ?? config.defaultTargetLang ?? 'ja',
-        shouldExcludeFeedTitle
+        shouldExcludeFeedTitle,
+        shouldExcludeItemTitle
       )
 
       if (!translatedRSS) {

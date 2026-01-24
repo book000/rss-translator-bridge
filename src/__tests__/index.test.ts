@@ -21,6 +21,7 @@ describe('RSS Translator Bridge API', () => {
       defaultSourceLang: 'auto',
       defaultTargetLang: 'ja',
       defaultExcludeFeedTitle: true,
+      defaultExcludeItemTitle: false,
     })
 
     mockRSSProcessorInstance = {
@@ -46,7 +47,13 @@ describe('RSS Translator Bridge API', () => {
       request: FastifyRequest<{ Querystring: TranslateRequest }>,
       reply: FastifyReply
     ) => {
-      const { url, sourceLang, targetLang, excludeFeedTitle } = request.query
+      const {
+        url,
+        sourceLang,
+        targetLang,
+        excludeFeedTitle,
+        excludeItemTitle,
+      } = request.query
 
       if (!url) {
         return reply.code(400).send({
@@ -60,11 +67,16 @@ describe('RSS Translator Bridge API', () => {
           excludeFeedTitle === 'true' ||
           (excludeFeedTitle === undefined && config.defaultExcludeFeedTitle)
 
+        const shouldExcludeItemTitle =
+          excludeItemTitle === 'true' ||
+          (excludeItemTitle === undefined && config.defaultExcludeItemTitle)
+
         const translatedRSS = await rssProcessor.processRSSFeed(
           url,
           sourceLang ?? config.defaultSourceLang ?? 'auto',
           targetLang ?? config.defaultTargetLang ?? 'ja',
-          shouldExcludeFeedTitle
+          shouldExcludeFeedTitle,
+          shouldExcludeItemTitle
         )
 
         if (!translatedRSS) {
@@ -156,7 +168,8 @@ describe('RSS Translator Bridge API', () => {
         'https://example.com/feed.xml',
         'auto',
         'ja',
-        true
+        true,
+        false
       )
     })
 
@@ -175,7 +188,8 @@ describe('RSS Translator Bridge API', () => {
         'https://example.com/feed.xml',
         'en',
         'ko',
-        true
+        true,
+        false
       )
     })
 
@@ -233,7 +247,8 @@ describe('RSS Translator Bridge API', () => {
         'https://example.com/feed with spaces.xml',
         'auto',
         'ja',
-        true
+        true,
+        false
       )
     })
 
@@ -252,6 +267,7 @@ describe('RSS Translator Bridge API', () => {
         'https://example.com/feed.xml',
         'auto',
         'ja',
+        false,
         false
       )
     })
@@ -271,6 +287,87 @@ describe('RSS Translator Bridge API', () => {
         'https://example.com/feed.xml',
         'auto',
         'ja',
+        true,
+        false
+      )
+    })
+
+    it('should use excludeItemTitle parameter when provided as true', async () => {
+      const mockXML = '<rss>translated without item titles</rss>'
+      mockRSSProcessorInstance.processRSSFeed.mockResolvedValue(mockXML)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api?url=https://example.com/feed.xml&excludeItemTitle=true',
+      })
+
+      expect(response.statusCode).toBe(200)
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockRSSProcessorInstance.processRSSFeed).toHaveBeenCalledWith(
+        'https://example.com/feed.xml',
+        'auto',
+        'ja',
+        true,
+        true
+      )
+    })
+
+    it('should use excludeItemTitle parameter when provided as false', async () => {
+      const mockXML = '<rss>translated with item titles</rss>'
+      mockRSSProcessorInstance.processRSSFeed.mockResolvedValue(mockXML)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api?url=https://example.com/feed.xml&excludeItemTitle=false',
+      })
+
+      expect(response.statusCode).toBe(200)
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockRSSProcessorInstance.processRSSFeed).toHaveBeenCalledWith(
+        'https://example.com/feed.xml',
+        'auto',
+        'ja',
+        true,
+        false
+      )
+    })
+
+    it('should default excludeItemTitle to false when not provided', async () => {
+      const mockXML = '<rss>translated with default item title settings</rss>'
+      mockRSSProcessorInstance.processRSSFeed.mockResolvedValue(mockXML)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api?url=https://example.com/feed.xml',
+      })
+
+      expect(response.statusCode).toBe(200)
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockRSSProcessorInstance.processRSSFeed).toHaveBeenCalledWith(
+        'https://example.com/feed.xml',
+        'auto',
+        'ja',
+        true,
+        false
+      )
+    })
+
+    it('should handle both excludeFeedTitle and excludeItemTitle parameters together', async () => {
+      const mockXML = '<rss>translated with custom exclusion settings</rss>'
+      mockRSSProcessorInstance.processRSSFeed.mockResolvedValue(mockXML)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api?url=https://example.com/feed.xml&excludeFeedTitle=false&excludeItemTitle=true',
+      })
+
+      expect(response.statusCode).toBe(200)
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockRSSProcessorInstance.processRSSFeed).toHaveBeenCalledWith(
+        'https://example.com/feed.xml',
+        'auto',
+        'ja',
+        false,
         true
       )
     })

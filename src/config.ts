@@ -13,5 +13,6 @@ export function loadConfig(): Config {
     defaultSourceLang: process.env.DEFAULT_SOURCE_LANG ?? 'auto',
     defaultTargetLang: process.env.DEFAULT_TARGET_LANG ?? 'ja',
     defaultExcludeFeedTitle: process.env.DEFAULT_EXCLUDE_FEED_TITLE !== 'false',
+    defaultExcludeItemTitle: process.env.DEFAULT_EXCLUDE_ITEM_TITLE === 'true',
   }
 }

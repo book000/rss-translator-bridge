@@ -160,4 +160,50 @@ describe('loadConfig', () => {
       expect(config.defaultExcludeFeedTitle).toBe(true)
     })
   })
+
+  describe('defaultExcludeItemTitle handling', () => {
+    beforeEach(() => {
+      process.env.GAS_URL = 'https://example.com/gas'
+    })
+
+    it('should default to false when DEFAULT_EXCLUDE_ITEM_TITLE is not set', () => {
+      delete process.env.DEFAULT_EXCLUDE_ITEM_TITLE
+
+      const config = loadConfig()
+
+      expect(config.defaultExcludeItemTitle).toBe(false)
+    })
+
+    it('should be true when DEFAULT_EXCLUDE_ITEM_TITLE is "true"', () => {
+      process.env.DEFAULT_EXCLUDE_ITEM_TITLE = 'true'
+
+      const config = loadConfig()
+
+      expect(config.defaultExcludeItemTitle).toBe(true)
+    })
+
+    it('should be false when DEFAULT_EXCLUDE_ITEM_TITLE is "false"', () => {
+      process.env.DEFAULT_EXCLUDE_ITEM_TITLE = 'false'
+
+      const config = loadConfig()
+
+      expect(config.defaultExcludeItemTitle).toBe(false)
+    })
+
+    it('should be false when DEFAULT_EXCLUDE_ITEM_TITLE is empty string', () => {
+      process.env.DEFAULT_EXCLUDE_ITEM_TITLE = ''
+
+      const config = loadConfig()
+
+      expect(config.defaultExcludeItemTitle).toBe(false)
+    })
+
+    it('should be false when DEFAULT_EXCLUDE_ITEM_TITLE is any other value', () => {
+      process.env.DEFAULT_EXCLUDE_ITEM_TITLE = 'anything'
+
+      const config = loadConfig()
+
+      expect(config.defaultExcludeItemTitle).toBe(false)
+    })
+  })
 })
