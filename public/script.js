@@ -27,6 +27,7 @@ class RSSTranslator {
     const sourceLang = formData.get('sourceLang')
     const targetLang = formData.get('targetLang')
     const excludeFeedTitle = formData.get('excludeFeedTitle') ? 'true' : 'false'
+    const excludeItemTitle = formData.get('excludeItemTitle') ? 'true' : 'false'
 
     if (!url) {
       this.showError('RSS URLを入力してください')
@@ -47,7 +48,8 @@ class RSSTranslator {
         url,
         sourceLang,
         targetLang,
-        excludeFeedTitle
+        excludeFeedTitle,
+        excludeItemTitle
       )
 
       // 並行で実行
@@ -110,12 +112,19 @@ class RSSTranslator {
     }
   }
 
-  async translateRSS(url, sourceLang, targetLang, excludeFeedTitle) {
+  async translateRSS(
+    url,
+    sourceLang,
+    targetLang,
+    excludeFeedTitle,
+    excludeItemTitle
+  ) {
     const parameters = new URLSearchParams({
       url,
       sourceLang: sourceLang || 'auto',
       targetLang: targetLang || 'ja',
       excludeFeedTitle,
+      excludeItemTitle,
     })
 
     const requestUrl = `${globalThis.location.origin}/api?${parameters}`
