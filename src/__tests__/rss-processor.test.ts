@@ -259,6 +259,50 @@ describe('RSSProcessor', () => {
       expect(result).toContain('<description>')
     })
 
+    it('should use translated content when both content and description exist', async () => {
+      const feedWithBothFields = {
+        title: 'Test Feed',
+        items: [
+          {
+            title: 'Item with Both Fields',
+            content: 'Content field text',
+            description: 'Description field text',
+            link: 'https://example.com/item',
+            guid: 'item-both',
+            pubDate: '2023-01-01T00:00:00Z',
+          },
+        ],
+      }
+      mockParserInstance.parseURL.mockResolvedValue(feedWithBothFields)
+      const mockTranslations = new Map([
+        ['item-0-title', 'Both Fields を持つアイテム'],
+        ['item-0-content', 'Content フィールドテキスト'],
+      ])
+      mockTranslatorInstance.translateBatch.mockResolvedValue(mockTranslations)
+
+      const result = await rssProcessor.processRSSFeed(
+        'https://example.com/feed.xml',
+        'en',
+        'ja'
+      )
+
+      expect(result).toBeDefined()
+      expect(result).toContain('Both Fields を持つアイテム')
+      // Translated content should be in description tag (not untranslated description)
+      expect(result).toContain('Content フィールドテキスト')
+      expect(result).not.toContain('Description field text')
+
+      // Verify translation was collected from content field (higher priority)
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockTranslatorInstance.translateBatch).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          { id: 'item-0-content', text: 'Content field text' },
+        ]),
+        'en',
+        'ja'
+      )
+    })
+
     it('should return null when RSS parsing fails', async () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
         // no-op

@@ -148,7 +148,12 @@ export class RSSProcessor {
         } = {
           title: item.title ?? '',
           link: item.link ?? '',
-          description: item.description ?? item.summary ?? item.content ?? '',
+          description:
+            item.contentEncoded ??
+            item.content ??
+            item.description ??
+            item.summary ??
+            '',
           pubDate: item.pubDate ?? '',
           guid: item.guid ?? item.link ?? '',
         }
