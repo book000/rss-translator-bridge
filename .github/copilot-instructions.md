@@ -1,7 +1,7 @@
 # GitHub Copilot Instructions
 
 ## プロジェクト概要
-- 目的: RSS フィードを多言語翻訳するための高速ブリッジサーバーです。Google Apps Script（GAS）翻訳 API を使用してバッチ翻訳を行い、翻訳済みの RSS フィードを XML 形式で配信します。
+RSS フィードの多言語翻訳ブリッジサーバー。Google Apps Script API を使用してバッチ翻訳し、翻訳済み RSS XML を配信します。
 
 ## 共通ルール
 - 会話は日本語で行う。
@@ -11,9 +11,8 @@
 - 既存のプロジェクトルールがある場合はそれを優先する。
 
 ## 技術スタック
-- 言語: JavaScript
-- フレームワーク: Fastify
-- パッケージマネージャー: pnpm 優先（ロックファイルに従う）。
+- 言語: TypeScript
+- パッケージマネージャー: pnpm@9.0.0
 
 ## コーディング規約
 - フォーマット: 既存設定（ESLint / Prettier / formatter）に従う。
@@ -24,16 +23,26 @@
 - TypeScript 使用時は strict 前提とし、`skipLibCheck` で回避しない。
 - 関数やインターフェースには docstring（JSDoc など）を記載する。
 
-## 開発コマンド
+### 開発コマンド
 ```bash
-# 依存関係のインストール
+# install
 pnpm install
 
-# 開発 / テスト / Lint は README を確認してください
+# dev
+pnpm dev
+
+# build
+tsc
+
+# test
+jest
+
+# lint
+pnpm lint (prettier, eslint, tsc チェック)
+
 ```
 
 ## テスト方針
-- テストフレームワーク: Jest
 - 新機能や修正には適切なテストを追加する。
 
 ## セキュリティ / 機密情報
@@ -41,5 +50,13 @@ pnpm install
 - ログに機密情報を出力しない。
 
 ## ドキュメント更新
+- 実装確定後、同一コミットまたは追加コミットで更新する。
+- README、API ドキュメント、コメント等は常に最新状態を保つ。
 
 ## リポジトリ固有
+- Google Apps Script 翻訳 API 統合
+- Vercel デプロイ対応
+- バッチ翻訳処理
+- HTML コンテンツ対応
+- 環境変数ベース設定
+- Conventional Commits 準拠

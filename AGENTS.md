@@ -25,3 +25,9 @@
 - ログに機密情報を出力しない。
 
 ## リポジトリ固有
+- Google Apps Script 翻訳 API 統合
+- Vercel デプロイ対応
+- バッチ翻訳処理
+- HTML コンテンツ対応
+- 環境変数ベース設定
+- Conventional Commits 準拠

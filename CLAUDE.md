@@ -1,170 +1,137 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## 目的
+- Claude Code の作業方針とプロジェクト固有ルールを示す。
+
+## 判断記録のルール
+- 判断は必ずレビュー可能な形で記録する。
+  1. 判断内容の要約
+  2. 検討した代替案
+  3. 採用しなかった案とその理由
+  4. 前提条件・仮定・不確実性
+  5. 他エージェントによるレビュー可否
+- 前提・仮定・不確実性を明示し、仮定を事実のように扱わない。
 
 ## プロジェクト概要
+RSS フィードの多言語翻訳ブリッジサーバー。Google Apps Script API を使用してバッチ翻訳し、翻訳済み RSS XML を配信します。
 
-RSS Translator Bridgeは、RSSフィードを翻訳するFastifyベースのWebサーバーです。Google Apps Script（GAS）翻訳APIを使用してRSSフィードのタイトルと本文をバッチ翻訳し、翻訳済みのRSS XMLを返します。
+### 技術スタック
+- **言語**: TypeScript
+- **フレームワーク**: Fastify
+- **パッケージマネージャー**: pnpm@9.0.0
+- **主要な依存関係**:
+  - fastify 4.25.0
+  - axios 1.6.0
+  - rss-parser 3.13.0
+  - xml2js 0.6.2
 
-## アーキテクチャ
+## 重要ルール
+- 会話言語: 日本語
+- PR とコミットは Conventional Commits に従う。
+- PR タイトルとコミット本文の言語: PR タイトルは Conventional Commits 形式（英語推奨）。PR 本文は日本語。コミットは Conventional Commits 形式（description は日本語）。
+- コメント言語: 日本語
+- エラーメッセージ: 英語
+- 日本語と英数字の間には半角スペースを入れる。
+- 既存のプロジェクトルールがある場合はそれを優先する。
 
-### 主要コンポーネント
+## 環境のルール
+- ブランチ命名は Conventional Branch に従う。
+- GitHub リポジトリを調査する場合はテンポラリディレクトリに `git clone` して検索する。
+- Windows 環境では Git Bash を使用する。
+- Renovate の既存 PR には追加コミットしない。
 
-- **index.ts**: Fastifyサーバーの設定と起動、メインのルーティング
-- **rss-processor.ts**: RSSParser を使用したフィード取得・解析・XML再構築
-- **translator.ts**: GAS API を使用したバッチ翻訳処理
-- **types.ts**: TypeScript型定義（RSS、翻訳リクエスト/レスポンス）
-- **config.ts**: 環境変数ベースの設定管理
+## Git Worktree
+- 使う場合は `.bare/<branch>` 構成で作成する。
 
-### データフロー
+## ブラウザ操作
+- 座標ではなくセレクターで要素を特定する。
+- 実装と画面の差異を確認し、必要に応じて実装を改善する。
 
-1. クライアント → GET /?url=&sourceLang=&targetLang=
-2. RSSProcessor → RSS取得・解析 → バッチ翻訳項目の準備
-3. Translator → GAS API への バッチ翻訳リクエスト
-4. レスポンス → 翻訳結果をRSSに適用 → XML形式で返却
+## コード改修時のルール
+- 既存のエラーメッセージで先頭に絵文字がある場合、全体で統一する。
+- TypeScript 使用時は `skipLibCheck` で回避しない。
+- 関数やインターフェースには docstring（JSDoc など）を記載する。
 
-## 開発コマンド
+### コーディング規約
+ESLint: @book000/eslint-config ベース, Prettier: printWidth 80, singleQuote: true, trailingComma: es5, semi: false, TypeScript: strict モード, Node.js 18.0.0 以上, Jest: ts-jest + ESM サポート
 
-### パッケージマネージャー
+## 相談ルール
+- Codex CLI: 実装レビュー、局所設計、整合性確認に使う。
+- Gemini CLI: 外部仕様や最新情報の確認に使う。
+- 他エージェントの指摘は黙殺せず、採用または理由を明記して不採用とする。
 
-このプロジェクトは **pnpm** を使用します（package.jsonにpackageManagerが指定済み）。
-
-### 基本コマンド
-
+### 開発コマンド
 ```bash
-# 開発サーバー起動（ホットリロード）
+# install
+pnpm install
+
+# dev
 pnpm dev
 
-# プロダクションサーバー起動
-pnpm start
+# build
+tsc
 
-# ビルド
-pnpm build
+# test
+jest
 
-# 品質チェック（コミット前に必須実行）
-pnpm lint
+# lint
+pnpm lint (prettier, eslint, tsc チェック)
 
-# テスト実行
-pnpm test
-
-# 型チェック
-pnpm typecheck
 ```
 
-### 詳細コマンド
+### プロジェクト構造
+**ルートファイル:**
+- `package.json`
+- `tsconfig.json`
 
-```bash
-# Prettier チェック
-pnpm lint:prettier
+**主要ディレクトリ:**
+- `src/`
+- `api/`
+- `public/`
 
-# ESLint チェック
-pnpm lint:eslint
-
-# TypeScript型チェック
-pnpm lint:tsc
-
-# Prettier 自動修正
-pnpm fix:prettier
-
-# ESLint 自動修正
-pnpm fix:eslint
-```
-
-## 環境変数
-
-### 必須
-
-- `GAS_URL`: Google Apps Script翻訳APIのURL
-
-### オプション
-
-- `PORT`: サーバーポート（デフォルト: 3000）
-- `HOST`: サーバーホスト（デフォルト: 0.0.0.0）
-- `DEFAULT_SOURCE_LANG`: デフォルトソース言語（デフォルト: auto）
-- `DEFAULT_TARGET_LANG`: デフォルトターゲット言語（デフォルト: ja）
-
-## API仕様
-
-### GET /
-
-RSSフィードを翻訳して返すメインエンドポイント
-
-**クエリパラメータ:**
-
-- `url` (必須): 翻訳対象のRSSフィードURL
-- `sourceLang` (オプション): ソース言語コード
-- `targetLang` (オプション): ターゲット言語コード
-
-**レスポンス:** 翻訳済みRSS XML または エラーJSON
-
-### GET /health
-
-ヘルスチェックエンドポイント
+## 実装パターン
+- 既存のコードパターンに従う。
+- プロジェクト固有の実装ガイドラインがある場合はそれに従う。
 
 ## テスト
+- 方針: 変更内容に応じてテストを追加する。
 
-Jest + ts-jest を使用。`src/__tests__/` ディレクトリにテストファイルを配置。
+## ドキュメント更新ルール
+- 更新タイミング: 実装確定後、同一コミットまたは追加コミットで更新する。
+- README、API ドキュメント、コメント等は常に最新状態を保つ。
 
-### テスト実行
+## 作業チェックリスト
 
-```bash
-# 全テスト実行
-pnpm test
+### 新規改修時
+1. プロジェクトを理解する。
+2. 作業ブランチが適切であることを確認する。
+3. 最新のリモートブランチに基づいた新規ブランチであることを確認する。
+4. PR がクローズされた不要ブランチが削除済みであることを確認する。
+5. 指定されたパッケージマネージャーで依存関係をインストールする。
 
-# 単一ファイルテスト
-pnpm test rss-processor.test.ts
-```
+### コミット・プッシュ前
+1. Conventional Commits に従っていることを確認する。
+2. センシティブな情報が含まれていないことを確認する。
+3. Lint / Format エラーがないことを確認する。
+4. 動作確認を行う。
 
-## コーディング規約
+### PR 作成前
+1. PR 作成の依頼があることを確認する。
+2. センシティブな情報が含まれていないことを確認する。
+3. コンフリクトの恐れがないことを確認する。
 
-- ESLint設定: `@book000/eslint-config` ベース
-- TypeScript strict モード有効
-- Prettier による自動フォーマット
-- ES modules 使用（package.json で type: "module"）
-- Node.js 18.x 以上が必要
+### PR 作成後
+1. コンフリクトがないことを確認する。
+2. PR 本文が最新状態のみを網羅していることを確認する。
+3. `gh pr checks <PR ID> --watch` で CI を確認する。
+4. Copilot レビューに対応し、コメントに返信する。
+5. Codex のコードレビューを実施し、指摘対応を行う。
+6. PR 本文の崩れがないことを確認する。
 
-## Vercel デプロイ
-
-`vercel.json` で設定済み。`/api/serverless.ts` でサーバーレス関数として動作。
-
-## ワークフロー自動化
-
-### Issue対応フロー
-
-`"issue #nn を対応してください"` コマンドで以下を自動実行:
-
-```bash
-1. gh issue view {nn}                    # Issue情報取得
-2. git checkout -b issue-{nn}-{description} --no-track origin/main  # ブランチ作成
-3. # 実装作業
-4. pnpm lint && pnpm test                # 品質検証
-5. git commit -m "feat: {title}\n\nCloses #{nn}"  # コミット
-6. git push -u origin {branch}           # プッシュ
-7. gh pr create --title "feat: {title}" --body "Closes #{nn}"  # PR作成
-```
-
-### レビュー対応フロー
-
-`"レビューに対応してください"` コマンドで以下を自動実行:
-
-```bash
-1. gh api repos/{owner}/{repo}/pulls/{pr}/comments  # コメント取得
-2. Copilot/Human コメントの分類・対応
-3. 修正実装
-4. pnpm lint && pnpm test               # 品質検証
-5. git commit && git push               # コミット・プッシュ
-6. GraphQL APIでreview thread解決
-```
-
-### Git操作の自動化
-
-- リモート判定: upstream 優先、非存在時は origin 使用
-- ブランチ作成: `--no-track` で独立ブランチ作成
-- Conventional Commits 形式でのコミット
-
-## 注意事項
-
-- バッチ翻訳でVercelの30秒制限を回避（GAS側のタイムアウト: 25秒）
-- 翻訳失敗時は元のテキストをフォールバックとして使用
-- RSSフィードのアイテム数制限なし（全件翻訳）
-- HTMLコンテンツの翻訳に対応（content:encoded, description, summary）
+## リポジトリ固有
+- Google Apps Script 翻訳 API 統合
+- Vercel デプロイ対応
+- バッチ翻訳処理
+- HTML コンテンツ対応
+- 環境変数ベース設定
+- Conventional Commits 準拠
