@@ -20,7 +20,8 @@ export class RSSProcessor {
     feedUrl: string,
     sourceLang: string,
     targetLang: string,
-    excludeFeedTitle = true
+    excludeFeedTitle = true,
+    excludeItemTitle = false
   ): Promise<string | null> {
     try {
       // Fetch and parse RSS feed
@@ -41,7 +42,7 @@ export class RSSProcessor {
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (feed.items?.length) {
         for (const [index, item] of feed.items.entries()) {
-          if (item.title) {
+          if (item.title && !excludeItemTitle) {
             batchItems.push({ id: `item-${index}-title`, text: item.title })
           }
 
@@ -81,7 +82,7 @@ export class RSSProcessor {
           const titleKey = `item-${index}-title`
           const contentKey = `item-${index}-content`
 
-          if (item.title && translations.has(titleKey)) {
+          if (item.title && !excludeItemTitle && translations.has(titleKey)) {
             item.title = translations.get(titleKey) ?? item.title
           }
 
