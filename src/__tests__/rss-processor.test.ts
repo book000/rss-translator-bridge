@@ -434,6 +434,124 @@ describe('RSSProcessor', () => {
         'ja'
       )
     })
+
+    it('should exclude item title translation when excludeItemTitle is true', async () => {
+      mockParserInstance.parseURL.mockResolvedValue(createMockFeed())
+
+      // Note: item titles should NOT be in the translations since excludeItemTitle=true
+      const mockTranslations = new Map([
+        ['feed-description', 'テスト説明'],
+        ['item-0-content', 'アイテム1コンテンツ'],
+        ['item-1-content', '<p>アイテム2コンテンツエンコード</p>'],
+      ])
+      mockTranslatorInstance.translateBatch.mockResolvedValue(mockTranslations)
+
+      const result = await rssProcessor.processRSSFeed(
+        'https://example.com/feed.xml',
+        'en',
+        'ja',
+        true,
+        true
+      )
+
+      expect(result).toBeDefined()
+      expect(result).toContain('Item 1 Title') // original item title kept (not translated)
+      expect(result).toContain('Item 2 Title') // original item title kept (not translated)
+      expect(result).toContain('テスト説明') // description translated
+      expect(result).toContain('アイテム1コンテンツ') // item content translated
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockTranslatorInstance.translateBatch).toHaveBeenCalledWith(
+        expect.not.arrayContaining([
+          { id: 'item-0-title', text: 'Item 1 Title' },
+        ]),
+        'en',
+        'ja'
+      )
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockTranslatorInstance.translateBatch).toHaveBeenCalledWith(
+        expect.not.arrayContaining([
+          { id: 'item-1-title', text: 'Item 2 Title' },
+        ]),
+        'en',
+        'ja'
+      )
+    })
+
+    it('should translate item titles when excludeItemTitle is false (default)', async () => {
+      mockParserInstance.parseURL.mockResolvedValue(createMockFeed())
+
+      // All item titles should be in the translations
+      const mockTranslations = new Map([
+        ['feed-description', 'テスト説明'],
+        ['item-0-title', 'アイテム1タイトル'],
+        ['item-0-content', 'アイテム1コンテンツ'],
+        ['item-1-title', 'アイテム2タイトル'],
+        ['item-1-content', '<p>アイテム2コンテンツエンコード</p>'],
+      ])
+      mockTranslatorInstance.translateBatch.mockResolvedValue(mockTranslations)
+
+      const result = await rssProcessor.processRSSFeed(
+        'https://example.com/feed.xml',
+        'en',
+        'ja',
+        true,
+        false
+      )
+
+      expect(result).toBeDefined()
+      expect(result).toContain('アイテム1タイトル') // item title translated
+      expect(result).toContain('アイテム2タイトル') // item title translated
+      expect(result).toContain('テスト説明') // description translated
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockTranslatorInstance.translateBatch).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          { id: 'item-0-title', text: 'Item 1 Title' },
+          { id: 'item-1-title', text: 'Item 2 Title' },
+        ]),
+        'en',
+        'ja'
+      )
+    })
+
+    it('should handle both excludeFeedTitle and excludeItemTitle together', async () => {
+      mockParserInstance.parseURL.mockResolvedValue(createMockFeed())
+
+      // Only content should be translated (no feed title, no item titles)
+      const mockTranslations = new Map([
+        ['feed-description', 'テスト説明'],
+        ['item-0-content', 'アイテム1コンテンツ'],
+        ['item-1-content', '<p>アイテム2コンテンツエンコード</p>'],
+      ])
+      mockTranslatorInstance.translateBatch.mockResolvedValue(mockTranslations)
+
+      const result = await rssProcessor.processRSSFeed(
+        'https://example.com/feed.xml',
+        'en',
+        'ja',
+        true,
+        true
+      )
+
+      expect(result).toBeDefined()
+      expect(result).toContain('Test Feed') // original feed title kept
+      expect(result).toContain('Item 1 Title') // original item title kept
+      expect(result).toContain('Item 2 Title') // original item title kept
+      expect(result).toContain('テスト説明') // description translated
+      expect(result).toContain('アイテム1コンテンツ') // item content translated
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockTranslatorInstance.translateBatch).toHaveBeenCalledWith(
+        expect.not.arrayContaining([
+          { id: 'feed-title', text: 'Test Feed' },
+          { id: 'item-0-title', text: 'Item 1 Title' },
+          { id: 'item-1-title', text: 'Item 2 Title' },
+        ]),
+        'en',
+        'ja'
+      )
+    })
   })
 
   describe('feedToXML', () => {

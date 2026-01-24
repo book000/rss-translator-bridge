@@ -82,6 +82,8 @@ pnpm fix:eslint
 - `HOST`: サーバーホスト（デフォルト: 0.0.0.0）
 - `DEFAULT_SOURCE_LANG`: デフォルトソース言語（デフォルト: auto）
 - `DEFAULT_TARGET_LANG`: デフォルトターゲット言語（デフォルト: ja）
+- `DEFAULT_EXCLUDE_FEED_TITLE`: RSS フィードタイトルを翻訳しないかどうか（デフォルト: true）
+- `DEFAULT_EXCLUDE_ITEM_TITLE`: RSS 記事タイトルを翻訳しないかどうか（デフォルト: false）
 
 ## API仕様
 
@@ -94,6 +96,8 @@ RSSフィードを翻訳して返すメインエンドポイント
 - `url` (必須): 翻訳対象のRSSフィードURL
 - `sourceLang` (オプション): ソース言語コード
 - `targetLang` (オプション): ターゲット言語コード
+- `excludeFeedTitle` (オプション): RSS フィードタイトルを翻訳しないかどうか（true/false）
+- `excludeItemTitle` (オプション): RSS 記事タイトルを翻訳しないかどうか（true/false）
 
 **レスポンス:** 翻訳済みRSS XML または エラーJSON
 
