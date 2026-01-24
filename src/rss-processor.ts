@@ -45,7 +45,11 @@ export class RSSProcessor {
             batchItems.push({ id: `item-${index}-title`, text: item.title })
           }
 
-          const content = item.contentEncoded ?? item.content ?? item.summary
+          const content =
+            item.contentEncoded ??
+            item.content ??
+            item.description ??
+            item.summary
           if (content) {
             batchItems.push({ id: `item-${index}-content`, text: content })
           }
@@ -81,7 +85,11 @@ export class RSSProcessor {
             item.title = translations.get(titleKey) ?? item.title
           }
 
-          const content = item.contentEncoded ?? item.content ?? item.summary
+          const content =
+            item.contentEncoded ??
+            item.content ??
+            item.description ??
+            item.summary
           if (content && translations.has(contentKey)) {
             const translatedContent = translations.get(contentKey) ?? content
 
@@ -89,6 +97,8 @@ export class RSSProcessor {
               item.contentEncoded = translatedContent
             } else if (item.content) {
               item.content = translatedContent
+            } else if (item.description) {
+              item.description = translatedContent
             } else if (item.summary) {
               item.summary = translatedContent
             }
@@ -138,7 +148,12 @@ export class RSSProcessor {
         } = {
           title: item.title ?? '',
           link: item.link ?? '',
-          description: item.summary ?? item.content ?? '',
+          description:
+            item.contentEncoded ??
+            item.content ??
+            item.description ??
+            item.summary ??
+            '',
           pubDate: item.pubDate ?? '',
           guid: item.guid ?? item.link ?? '',
         }

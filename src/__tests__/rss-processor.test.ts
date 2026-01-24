@@ -154,7 +154,7 @@ describe('RSSProcessor', () => {
       )
     })
 
-    it('should prioritize contentEncoded over content and summary', async () => {
+    it('should prioritize contentEncoded over content, description, and summary', async () => {
       const feedWithMultipleContent = {
         title: 'Test Feed',
         items: [
@@ -162,6 +162,7 @@ describe('RSSProcessor', () => {
             title: 'Test Item',
             contentEncoded: '<p>Content Encoded</p>',
             content: 'Regular Content',
+            description: 'Description Content',
             summary: 'Summary Content',
           },
         ],
@@ -179,6 +180,123 @@ describe('RSSProcessor', () => {
       expect(mockTranslatorInstance.translateBatch).toHaveBeenCalledWith(
         expect.arrayContaining([
           { id: 'item-0-content', text: '<p>Content Encoded</p>' },
+        ]),
+        'en',
+        'ja'
+      )
+    })
+
+    it('should use description when contentEncoded and content are not available', async () => {
+      const feedWithDescription = {
+        title: 'Test Feed',
+        items: [
+          {
+            title: 'Test Item',
+            description: 'Description Content',
+            summary: 'Summary Content',
+            link: 'https://example.com/item',
+            guid: 'test-item',
+          },
+        ],
+      }
+      mockParserInstance.parseURL.mockResolvedValue(feedWithDescription)
+      const mockTranslations = new Map([
+        ['item-0-content', 'Description コンテンツ'],
+      ])
+      mockTranslatorInstance.translateBatch.mockResolvedValue(mockTranslations)
+
+      const result = await rssProcessor.processRSSFeed(
+        'https://example.com/feed.xml',
+        'en',
+        'ja'
+      )
+
+      // description should be translated
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockTranslatorInstance.translateBatch).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          { id: 'item-0-content', text: 'Description Content' },
+        ]),
+        'en',
+        'ja'
+      )
+
+      // XML output should contain translated description
+      expect(result).toBeDefined()
+      expect(result).toContain('Description コンテンツ')
+    })
+
+    it('should translate description field and output it in XML', async () => {
+      const feedWithOnlyDescription = {
+        title: 'Test Feed',
+        items: [
+          {
+            title: 'Item with Description',
+            description: '<p>HTML Description Content</p>',
+            link: 'https://example.com/item',
+            guid: 'item-desc',
+            pubDate: '2023-01-01T00:00:00Z',
+          },
+        ],
+      }
+      mockParserInstance.parseURL.mockResolvedValue(feedWithOnlyDescription)
+      const mockTranslations = new Map([
+        ['item-0-title', 'Description を持つアイテム'],
+        ['item-0-content', '<p>HTML Description コンテンツ</p>'],
+      ])
+      mockTranslatorInstance.translateBatch.mockResolvedValue(mockTranslations)
+
+      const result = await rssProcessor.processRSSFeed(
+        'https://example.com/feed.xml',
+        'en',
+        'ja'
+      )
+
+      expect(result).toBeDefined()
+      expect(result).toContain('Description を持つアイテム')
+      expect(result).toContain('<p>HTML Description コンテンツ</p>')
+      // description should be in the description tag
+      expect(result).toContain('<description>')
+    })
+
+    it('should use translated content when both content and description exist', async () => {
+      const feedWithBothFields = {
+        title: 'Test Feed',
+        items: [
+          {
+            title: 'Item with Both Fields',
+            content: 'Content field text',
+            description: 'Description field text',
+            link: 'https://example.com/item',
+            guid: 'item-both',
+            pubDate: '2023-01-01T00:00:00Z',
+          },
+        ],
+      }
+      mockParserInstance.parseURL.mockResolvedValue(feedWithBothFields)
+      const mockTranslations = new Map([
+        ['item-0-title', 'Both Fields を持つアイテム'],
+        ['item-0-content', 'Content フィールドテキスト'],
+      ])
+      mockTranslatorInstance.translateBatch.mockResolvedValue(mockTranslations)
+
+      const result = await rssProcessor.processRSSFeed(
+        'https://example.com/feed.xml',
+        'en',
+        'ja'
+      )
+
+      expect(result).toBeDefined()
+      expect(result).toContain('Both Fields を持つアイテム')
+      // Translated content should be in description tag (not untranslated description)
+      expect(result).toContain('Content フィールドテキスト')
+      expect(result).not.toContain('Description field text')
+
+      // Verify translation was collected from content field (higher priority)
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(mockTranslatorInstance.translateBatch).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          { id: 'item-0-content', text: 'Content field text' },
         ]),
         'en',
         'ja'
