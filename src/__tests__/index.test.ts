@@ -47,8 +47,13 @@ describe('RSS Translator Bridge API', () => {
       request: FastifyRequest<{ Querystring: TranslateRequest }>,
       reply: FastifyReply
     ) => {
-      const { url, sourceLang, targetLang, excludeFeedTitle, excludeItemTitle } =
-        request.query
+      const {
+        url,
+        sourceLang,
+        targetLang,
+        excludeFeedTitle,
+        excludeItemTitle,
+      } = request.query
 
       if (!url) {
         return reply.code(400).send({
