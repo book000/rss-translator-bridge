@@ -51,7 +51,7 @@ RSS Translator Bridge は、RSS フィードを翻訳する Fastify ベースの
 - **コメント言語**: 日本語
 - **エラーメッセージ言語**: 英語
 - **TypeScript strict モード**: 有効
-- **skipLibCheck**: 禁止
+- **型安全性**: `any` 型の多用を避ける
 - **docstring**: 関数・インターフェースに JSDoc を日本語で記載
 
 ## 開発コマンド

@@ -93,7 +93,7 @@ pnpm typecheck
 ## コーディング規約
 
 - **TypeScript strict モード**: 有効
-- **skipLibCheck**: 禁止
+- **型安全性**: `any` 型の多用を避ける
 - **docstring**: 関数・インターフェースに JSDoc を日本語で記載
 - **フォーマット**: Prettier による自動フォーマット
 - **Lint**: ESLint ルールに従う

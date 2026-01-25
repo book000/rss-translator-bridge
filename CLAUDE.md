@@ -44,7 +44,7 @@ RSS Translator Bridge は、RSS フィードを翻訳する Fastify ベースの
 
 - 日本語と英数字の間には、半角スペースを挿入しなければならない
 - 既存のエラーメッセージで、先頭に絵文字がある場合は、全体でエラーメッセージに絵文字を設定する。絵文字はエラーメッセージに即した一文字の絵文字である必要がある
-- TypeScript プロジェクトにおいて、`skipLibCheck` を有効にして回避することは絶対にしてはならない
+- TypeScript プロジェクトでは型安全性を重視し、`any` 型の多用を避ける
 - 関数やインターフェースには、docstring (JSDoc など) を記載・更新する。日本語で記載する必要がある
 
 ## 相談ルール
@@ -169,7 +169,6 @@ pnpm fix:eslint
 
 - グローバル変数の使用
 - `any` 型の多用
-- `skipLibCheck` の使用
 - センシティブな情報のコミット
 
 ## テスト
@@ -285,7 +284,7 @@ RSS フィードを翻訳して返すメインエンドポイント
 
 ```bash
 1. gh issue view {nn}                    # Issue情報取得
-2. git checkout -b issue-{nn}-{description} --no-track origin/master  # ブランチ作成
+2. git checkout -b issue-{nn}-{description} --no-track origin/master  # デフォルトブランチからブランチ作成
 3. # 実装作業
 4. pnpm lint && pnpm test                # 品質検証
 5. git commit -m "feat: {title}\n\nCloses #{nn}"  # コミット

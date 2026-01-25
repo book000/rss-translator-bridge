@@ -31,7 +31,7 @@
 ## コーディング規約
 
 - TypeScript strict モード有効
-- `skipLibCheck` での回避は禁止
+- 型安全性を重視し、`any` 型の多用を避ける
 - 関数・インターフェースには docstring (JSDoc) を日本語で記載
 - Prettier による自動フォーマット
 - ESLint ルールに従う
