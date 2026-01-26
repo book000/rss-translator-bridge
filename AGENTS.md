@@ -37,7 +37,7 @@ RSS Translator Bridge は、RSS フィードを翻訳する Fastify ベースの
 ### 主な機能
 
 - RSS フィードの取得と解析
-- Google Apps Script API によるバッチ翻訳
+- Google Apps Script（GAS）翻訳 API によるバッチ翻訳
 - 翻訳済み RSS フィードの配信（XML 形式）
 - ヘルスチェックエンドポイント
 

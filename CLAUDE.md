@@ -283,7 +283,7 @@ RSS フィードを翻訳して返すメインエンドポイント
 `"issue #nn を対応してください"` コマンドで以下を自動実行:
 
 ```bash
-1. gh issue view {nn}                    # Issue情報取得
+1. gh issue view {nn}                    # Issue 情報取得
 2. git checkout -b issue-{nn}-{description} --no-track origin/master  # デフォルトブランチからブランチ作成
 3. # 実装作業
 4. pnpm lint && pnpm test                # 品質検証
@@ -302,7 +302,7 @@ RSS フィードを翻訳して返すメインエンドポイント
 3. 修正実装
 4. pnpm lint && pnpm test               # 品質検証
 5. git commit && git push               # コミット・プッシュ
-6. GraphQL APIでreview thread解決
+6. GraphQL API で review thread 解決
 ```
 
 ### Git 操作の自動化
