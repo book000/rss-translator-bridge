@@ -5,36 +5,11 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { loadConfig } from './config.js'
 import { RSSProcessor } from './rss-processor.js'
-import {
-  CacheControlConfig,
-  TranslateRequest,
-  TranslateResponse,
-} from './types.js'
+import { buildCacheControlHeader } from './cache-control.js'
+import { TranslateRequest, TranslateResponse } from './types.js'
 
 const currentFilename = fileURLToPath(import.meta.url)
 const currentDirname = path.dirname(currentFilename)
-
-/** Cache-Control の秒数を正規化する。 */
-function normalizeCacheSeconds(value: number): number {
-  if (!Number.isFinite(value) || value <= 0) {
-    return 0
-  }
-  return Math.floor(value)
-}
-
-/** Cache-Control ヘッダーを生成する。 */
-function buildCacheControlHeader(cacheControl: CacheControlConfig): string {
-  if (!cacheControl.enabled) {
-    return 'no-store'
-  }
-
-  const sMaxAge = normalizeCacheSeconds(cacheControl.sMaxAge)
-  const staleWhileRevalidate = normalizeCacheSeconds(
-    cacheControl.staleWhileRevalidate
-  )
-
-  return `public, max-age=0, s-maxage=${sMaxAge}, stale-while-revalidate=${staleWhileRevalidate}`
-}
 
 /** Fastify アプリケーションを生成する。 */
 export async function getApp() {

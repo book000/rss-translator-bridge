@@ -3,6 +3,7 @@ import cors from '@fastify/cors'
 import { loadConfig } from '../config.js'
 import { RSSProcessor } from '../rss-processor.js'
 import { TranslateRequest, TranslateResponse } from '../types.js'
+import { buildCacheControlHeader } from '../cache-control.js'
 
 // 起動テスト用の設定を追加
 process.env.NODE_ENV = 'test'
@@ -90,10 +91,7 @@ async function getTestApp() {
       return await reply
         .code(200)
         .header('Content-Type', 'application/rss+xml; charset=utf-8')
-        .header(
-          'Cache-Control',
-          `public, max-age=0, s-maxage=${config.cacheControl.sMaxAge}, stale-while-revalidate=${config.cacheControl.staleWhileRevalidate}`
-        )
+        .header('Cache-Control', buildCacheControlHeader(config.cacheControl))
         .send(translatedRSS)
     } catch (error) {
       app.log.error(error)
