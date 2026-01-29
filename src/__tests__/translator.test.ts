@@ -44,6 +44,32 @@ describe('Translator', () => {
     )
   })
 
+  it('should reuse cached translation on repeated calls', async () => {
+    translator = new Translator('https://example.com/translate', {
+      enabled: true,
+      ttlMs: 60_000,
+      maxItems: 100,
+    })
+    const mockResponse = {
+      status: 200,
+      data: {
+        response: {
+          status: true,
+          result: 'こんにちは',
+        },
+      },
+    }
+    mockedAxios.post.mockResolvedValueOnce(mockResponse)
+
+    const first = await translator.translate('Hello', 'en', 'ja')
+    const second = await translator.translate('Hello', 'en', 'ja')
+
+    expect(first).toBe('こんにちは')
+    expect(second).toBe('こんにちは')
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(mockedAxios.post).toHaveBeenCalledTimes(1)
+  })
+
   it('should return null on translation error', async () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
       // no-op
@@ -217,35 +243,11 @@ describe('Translator - Batch Translation', () => {
   })
 
   it('should handle empty batch items', async () => {
-    const mockResponse = {
-      status: 200,
-      data: {
-        status: true,
-        processed: 0,
-        total: 0,
-        executionTime: 10,
-        results: [],
-      },
-    }
-    mockedAxios.post.mockResolvedValueOnce(mockResponse)
-
     const result = await translator.translateBatch([], 'en', 'ja')
 
     expect(result.size).toBe(0)
     // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(mockedAxios.post).toHaveBeenCalledWith(
-      'https://example.com/translate',
-      {
-        batch: true,
-        before: 'en',
-        after: 'ja',
-        texts: [],
-        mode: 'html',
-      },
-      expect.objectContaining({
-        timeout: 25_000,
-      })
-    )
+    expect(mockedAxios.post).not.toHaveBeenCalled()
   })
 
   it('should return original texts on network error', async () => {
@@ -362,5 +364,54 @@ describe('Translator - Batch Translation', () => {
     expect(result.size).toBe(100)
     expect(result.get('item0')).toBe('翻訳 Text 0')
     expect(result.get('item99')).toBe('翻訳 Text 99')
+  })
+
+  it('should use cached batch results on repeated calls', async () => {
+    translator = new Translator('https://example.com/translate', {
+      enabled: true,
+      ttlMs: 60_000,
+      maxItems: 100,
+    })
+    const mockResponse = {
+      status: 200,
+      data: {
+        status: true,
+        processed: 3,
+        total: 3,
+        executionTime: 500,
+        results: [
+          {
+            id: 'item1',
+            success: true,
+            original: 'Hello',
+            translated: 'こんにちは',
+          },
+          { id: 'item2', success: true, original: 'World', translated: '世界' },
+          {
+            id: 'item3',
+            success: true,
+            original: 'How are you?',
+            translated: '元気ですか？',
+          },
+        ],
+      },
+    }
+    mockedAxios.post.mockResolvedValueOnce(mockResponse)
+
+    const first = await translator.translateBatch(mockBatchItems, 'en', 'ja')
+
+    expect(first.get('item1')).toBe('こんにちは')
+    expect(first.get('item2')).toBe('世界')
+    expect(first.get('item3')).toBe('元気ですか？')
+
+    mockedAxios.post.mockClear()
+
+    const second = await translator.translateBatch(mockBatchItems, 'en', 'ja')
+
+    expect(second.get('item1')).toBe('こんにちは')
+    expect(second.get('item2')).toBe('世界')
+    expect(second.get('item3')).toBe('元気ですか？')
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(mockedAxios.post).not.toHaveBeenCalled()
   })
 })

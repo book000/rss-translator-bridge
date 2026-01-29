@@ -5,11 +5,38 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { loadConfig } from './config.js'
 import { RSSProcessor } from './rss-processor.js'
-import { TranslateRequest, TranslateResponse } from './types.js'
+import {
+  CacheControlConfig,
+  TranslateRequest,
+  TranslateResponse,
+} from './types.js'
 
 const currentFilename = fileURLToPath(import.meta.url)
 const currentDirname = path.dirname(currentFilename)
 
+/** Cache-Control の秒数を正規化する。 */
+function normalizeCacheSeconds(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) {
+    return 0
+  }
+  return Math.floor(value)
+}
+
+/** Cache-Control ヘッダーを生成する。 */
+function buildCacheControlHeader(cacheControl: CacheControlConfig): string {
+  if (!cacheControl.enabled) {
+    return 'no-store'
+  }
+
+  const sMaxAge = normalizeCacheSeconds(cacheControl.sMaxAge)
+  const staleWhileRevalidate = normalizeCacheSeconds(
+    cacheControl.staleWhileRevalidate
+  )
+
+  return `public, max-age=0, s-maxage=${sMaxAge}, stale-while-revalidate=${staleWhileRevalidate}`
+}
+
+/** Fastify アプリケーションを生成する。 */
 export async function getApp() {
   const config = loadConfig()
   const app = fastify({
@@ -29,7 +56,7 @@ export async function getApp() {
     })
   }
 
-  const rssProcessor = new RSSProcessor(config.gasUrl)
+  const rssProcessor = new RSSProcessor(config.gasUrl, config.translationCache)
 
   // Health check endpoint
   app.get('/health', () => {
@@ -66,6 +93,7 @@ export async function getApp() {
   })
 
   // Main RSS translation endpoint handler
+  /** RSS 翻訳 API を処理する。 */
   const translateHandler = async (
     request: FastifyRequest<{ Querystring: TranslateRequest }>,
     reply: FastifyReply
@@ -110,6 +138,7 @@ export async function getApp() {
       return await reply
         .code(200)
         .header('Content-Type', 'application/rss+xml; charset=utf-8')
+        .header('Cache-Control', buildCacheControlHeader(config.cacheControl))
         .send(translatedRSS)
     } catch (error) {
       app.log.error(error)
@@ -129,6 +158,7 @@ export async function getApp() {
   return app
 }
 
+/** サーバーを起動する。 */
 async function start() {
   const config = loadConfig()
   const app = await getApp()

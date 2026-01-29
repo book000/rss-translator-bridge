@@ -22,6 +22,16 @@ describe('RSS Translator Bridge API', () => {
       defaultTargetLang: 'ja',
       defaultExcludeFeedTitle: true,
       defaultExcludeItemTitle: false,
+      translationCache: {
+        enabled: true,
+        ttlMs: 21_600_000,
+        maxItems: 1000,
+      },
+      cacheControl: {
+        enabled: true,
+        sMaxAge: 300,
+        staleWhileRevalidate: 60,
+      },
     })
 
     mockRSSProcessorInstance = {
@@ -35,7 +45,10 @@ describe('RSS Translator Bridge API', () => {
     app = fastify({ logger: false })
     await app.register(import('@fastify/cors'), { origin: true })
 
-    const rssProcessor = new RSSProcessor(config.gasUrl)
+    const rssProcessor = new RSSProcessor(
+      config.gasUrl,
+      config.translationCache
+    )
 
     // Health check endpoint
     app.get('/health', () => {
@@ -89,6 +102,10 @@ describe('RSS Translator Bridge API', () => {
         return await reply
           .code(200)
           .header('Content-Type', 'application/rss+xml; charset=utf-8')
+          .header(
+            'Cache-Control',
+            'public, max-age=0, s-maxage=300, stale-while-revalidate=60'
+          )
           .send(translatedRSS)
       } catch {
         return await reply.code(500).send({
@@ -161,6 +178,9 @@ describe('RSS Translator Bridge API', () => {
       expect(response.statusCode).toBe(200)
       expect(response.headers['content-type']).toBe(
         'application/rss+xml; charset=utf-8'
+      )
+      expect(response.headers['cache-control']).toBe(
+        'public, max-age=0, s-maxage=300, stale-while-revalidate=60'
       )
       expect(response.body).toBe(mockXML)
       // eslint-disable-next-line @typescript-eslint/unbound-method

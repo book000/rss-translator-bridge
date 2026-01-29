@@ -21,7 +21,7 @@ async function getTestApp() {
 
   // staticプラグインはテスト環境では登録しない
 
-  const rssProcessor = new RSSProcessor(config.gasUrl)
+  const rssProcessor = new RSSProcessor(config.gasUrl, config.translationCache)
 
   // Health check endpoint
   app.get('/health', () => {
@@ -90,6 +90,10 @@ async function getTestApp() {
       return await reply
         .code(200)
         .header('Content-Type', 'application/rss+xml; charset=utf-8')
+        .header(
+          'Cache-Control',
+          `public, max-age=0, s-maxage=${config.cacheControl.sMaxAge}, stale-while-revalidate=${config.cacheControl.staleWhileRevalidate}`
+        )
         .send(translatedRSS)
     } catch (error) {
       app.log.error(error)
