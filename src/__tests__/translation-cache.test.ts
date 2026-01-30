@@ -36,4 +36,18 @@ describe('TranslationCache', () => {
     expect(cache.get('first')).toBe('1')
     expect(cache.get('third')).toBe('3')
   })
+
+  it('should evict even when oldest key is empty string', () => {
+    const cache = new TranslationCache({
+      enabled: true,
+      ttlMs: 10_000,
+      maxItems: 1,
+    })
+
+    cache.set('', 'empty')
+    cache.set('next', 'value')
+
+    expect(cache.get('')).toBeNull()
+    expect(cache.get('next')).toBe('value')
+  })
 })

@@ -13,6 +13,20 @@ export class TranslationCache {
   /** 翻訳キャッシュを初期化する。 */
   constructor(private config: TranslationCacheConfig) {}
 
+  /** キャッシュが有効かどうかを判定する。 */
+  isEnabled(): boolean {
+    if (!this.config.enabled) {
+      return false
+    }
+    if (
+      !Number.isFinite(this.config.ttlMs) ||
+      !Number.isFinite(this.config.maxItems)
+    ) {
+      return false
+    }
+    return this.config.ttlMs > 0 && this.config.maxItems > 0
+  }
+
   /** キャッシュから翻訳結果を取得する。 */
   get(key: string): string | null {
     if (!this.config.enabled) {
@@ -72,7 +86,7 @@ export class TranslationCache {
     const overflow = this.store.size - this.config.maxItems
     for (let i = 0; i < overflow; i += 1) {
       const oldestKey = this.store.keys().next().value
-      if (!oldestKey) {
+      if (oldestKey === undefined) {
         break
       }
       this.store.delete(oldestKey)

@@ -40,16 +40,21 @@ export class Translator {
     const results = new Map<string, string>()
     const pendingItems: BatchTranslateItem[] = []
     const cacheKeys = new Map<string, string>()
+    const shouldUseCache = this.cache.isEnabled()
 
-    for (const item of items) {
-      const cacheKey = this.createCacheKey(item.text, sourceLang, targetLang)
-      const cached = this.cache.get(cacheKey)
-      if (cached !== null) {
-        results.set(item.id, cached)
-        continue
+    if (shouldUseCache) {
+      for (const item of items) {
+        const cacheKey = this.createCacheKey(item.text, sourceLang, targetLang)
+        const cached = this.cache.get(cacheKey)
+        if (cached !== null) {
+          results.set(item.id, cached)
+          continue
+        }
+        pendingItems.push(item)
+        cacheKeys.set(item.id, cacheKey)
       }
-      pendingItems.push(item)
-      cacheKeys.set(item.id, cacheKey)
+    } else {
+      pendingItems.push(...items)
     }
 
     if (pendingItems.length === 0) {
@@ -103,9 +108,11 @@ export class Translator {
         for (const result of response.data.results) {
           if (result.success && result.translated) {
             results.set(result.id, result.translated)
-            const cacheKey = cacheKeys.get(result.id)
-            if (cacheKey) {
-              this.cache.set(cacheKey, result.translated)
+            if (shouldUseCache) {
+              const cacheKey = cacheKeys.get(result.id)
+              if (cacheKey) {
+                this.cache.set(cacheKey, result.translated)
+              }
             }
           } else {
             console.log(`Translation failed for ${result.id}:`, result.error)
@@ -144,10 +151,16 @@ export class Translator {
     sourceLang: string,
     targetLang: string
   ): Promise<string | null> {
-    const cacheKey = this.createCacheKey(text, sourceLang, targetLang)
-    const cached = this.cache.get(cacheKey)
-    if (cached !== null) {
-      return cached
+    const shouldUseCache = this.cache.isEnabled()
+    const cacheKey = shouldUseCache
+      ? this.createCacheKey(text, sourceLang, targetLang)
+      : ''
+
+    if (shouldUseCache) {
+      const cached = this.cache.get(cacheKey)
+      if (cached !== null) {
+        return cached
+      }
     }
 
     try {
@@ -169,7 +182,7 @@ export class Translator {
 
       if (response.status === 200 && response.data.response?.status) {
         const translated = response.data.response.result ?? null
-        if (translated !== null) {
+        if (translated !== null && shouldUseCache) {
           this.cache.set(cacheKey, translated)
         }
         return translated
