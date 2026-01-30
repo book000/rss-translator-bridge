@@ -5,11 +5,13 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { loadConfig } from './config.js'
 import { RSSProcessor } from './rss-processor.js'
+import { buildCacheControlHeader } from './cache-control.js'
 import { TranslateRequest, TranslateResponse } from './types.js'
 
 const currentFilename = fileURLToPath(import.meta.url)
 const currentDirname = path.dirname(currentFilename)
 
+/** Fastify アプリケーションを生成する。 */
 export async function getApp() {
   const config = loadConfig()
   const app = fastify({
@@ -29,7 +31,7 @@ export async function getApp() {
     })
   }
 
-  const rssProcessor = new RSSProcessor(config.gasUrl)
+  const rssProcessor = new RSSProcessor(config.gasUrl, config.translationCache)
 
   // Health check endpoint
   app.get('/health', () => {
@@ -66,6 +68,7 @@ export async function getApp() {
   })
 
   // Main RSS translation endpoint handler
+  /** RSS 翻訳 API を処理する。 */
   const translateHandler = async (
     request: FastifyRequest<{ Querystring: TranslateRequest }>,
     reply: FastifyReply
@@ -110,6 +113,7 @@ export async function getApp() {
       return await reply
         .code(200)
         .header('Content-Type', 'application/rss+xml; charset=utf-8')
+        .header('Cache-Control', buildCacheControlHeader(config.cacheControl))
         .send(translatedRSS)
     } catch (error) {
       app.log.error(error)
@@ -129,6 +133,7 @@ export async function getApp() {
   return app
 }
 
+/** サーバーを起動する。 */
 async function start() {
   const config = loadConfig()
   const app = await getApp()

@@ -112,6 +112,12 @@ pnpm typecheck
 - `DEFAULT_TARGET_LANG`: デフォルトターゲット言語（デフォルト: ja）
 - `DEFAULT_EXCLUDE_FEED_TITLE`: RSS フィードタイトルを翻訳しないかどうか（デフォルト: true）
 - `DEFAULT_EXCLUDE_ITEM_TITLE`: RSS 記事タイトルを翻訳しないかどうか（デフォルト: false）
+- `TRANSLATION_CACHE_ENABLED`: 翻訳キャッシュを有効にするかどうか（デフォルト: true）
+- `TRANSLATION_CACHE_TTL_MS`: 翻訳キャッシュの TTL (ミリ秒)（デフォルト: 21600000）
+- `TRANSLATION_CACHE_MAX_ITEMS`: 翻訳キャッシュの最大件数（デフォルト: 1000）
+- `CDN_CACHE_ENABLED`: CDN キャッシュを有効にするかどうか（デフォルト: true）
+- `CDN_CACHE_S_MAXAGE`: CDN キャッシュの TTL (秒)（デフォルト: 300）
+- `CDN_CACHE_STALE_WHILE_REVALIDATE`: CDN 再検証の猶予時間 (秒)（デフォルト: 60）
 
 ## セキュリティ / 機密情報
 
