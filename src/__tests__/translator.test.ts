@@ -38,7 +38,12 @@ describe('Translator', () => {
       expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ before: 'en', after: 'ja', text: 'Hello', mode: 'html' }),
+        body: JSON.stringify({
+          before: 'en',
+          after: 'ja',
+          text: 'Hello',
+          mode: 'html',
+        }),
       })
     )
   })
@@ -148,9 +153,19 @@ describe('Translator - Batch Translation', () => {
         total: 3,
         executionTime: 500,
         results: [
-          { id: 'item1', success: true, original: 'Hello', translated: 'こんにちは' },
+          {
+            id: 'item1',
+            success: true,
+            original: 'Hello',
+            translated: 'こんにちは',
+          },
           { id: 'item2', success: true, original: 'World', translated: '世界' },
-          { id: 'item3', success: true, original: 'How are you?', translated: '元気ですか？' },
+          {
+            id: 'item3',
+            success: true,
+            original: 'How are you?',
+            translated: '元気ですか？',
+          },
         ],
       })
     )
@@ -186,9 +201,24 @@ describe('Translator - Batch Translation', () => {
         total: 3,
         executionTime: 500,
         results: [
-          { id: 'item1', success: true, original: 'Hello', translated: 'こんにちは' },
-          { id: 'item2', success: false, original: 'World', error: 'Translation failed' },
-          { id: 'item3', success: true, original: 'How are you?', translated: '元気ですか？' },
+          {
+            id: 'item1',
+            success: true,
+            original: 'Hello',
+            translated: 'こんにちは',
+          },
+          {
+            id: 'item2',
+            success: false,
+            original: 'World',
+            error: 'Translation failed',
+          },
+          {
+            id: 'item3',
+            success: true,
+            original: 'How are you?',
+            translated: '元気ですか？',
+          },
         ],
       })
     )
@@ -258,7 +288,9 @@ describe('Translator - Batch Translation', () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
       // no-op
     })
-    mockedFetch.mockResolvedValueOnce(mockFetchResponse(429, { error: 'Rate limit exceeded' }))
+    mockedFetch.mockResolvedValueOnce(
+      mockFetchResponse(429, { error: 'Rate limit exceeded' })
+    )
 
     const result = await translator.translateBatch(mockBatchItems, 'en', 'ja')
 
@@ -315,9 +347,19 @@ describe('Translator - Batch Translation', () => {
         total: 3,
         executionTime: 500,
         results: [
-          { id: 'item1', success: true, original: 'Hello', translated: 'こんにちは' },
+          {
+            id: 'item1',
+            success: true,
+            original: 'Hello',
+            translated: 'こんにちは',
+          },
           { id: 'item2', success: true, original: 'World', translated: '世界' },
-          { id: 'item3', success: true, original: 'How are you?', translated: '元気ですか？' },
+          {
+            id: 'item3',
+            success: true,
+            original: 'How are you?',
+            translated: '元気ですか？',
+          },
         ],
       })
     )
