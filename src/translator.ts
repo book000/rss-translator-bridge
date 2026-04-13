@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto'
-import axios from 'axios'
 import {
   GASTranslateRequest,
   GASBatchTranslateRequest,
@@ -29,6 +28,39 @@ export class Translator {
   ): string {
     const hash = createHash('sha256').update(text).digest('hex')
     return `${sourceLang}:${targetLang}:${hash}`
+  }
+
+  /** タイムアウト付きで GAS に JSON POST し、レスポンスを返す。 */
+  private async postWithTimeout(
+    body: unknown,
+    timeoutMs: number
+  ): Promise<Response> {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => {
+      controller.abort()
+    }, timeoutMs)
+
+    let response: Response
+    try {
+      response = await fetch(this.gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timeoutId)
+    }
+
+    if (!response.ok) {
+      const errorBody = await response.text()
+      const errorDetail = errorBody ? ` - ${errorBody.slice(0, 1000)}` : ''
+      throw new Error(
+        `HTTP error: ${response.status} ${response.statusText}${errorDetail}`
+      )
+    }
+
+    return response
   }
 
   /** 複数テキストをまとめて翻訳する。 */
@@ -80,32 +112,23 @@ export class Translator {
           .map((item) => ({ id: item.id, textLength: item.text.length }))
       )
 
-      const response = await axios.post<GASBatchTranslateResponse>(
-        this.gasUrl,
-        request,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          timeout: 25_000, // 25 seconds timeout for batch processing (within Vercel's 30s limit)
-        }
-      )
+      // 25 seconds timeout for batch processing (within Vercel's 30s limit)
+      const response = await this.postWithTimeout(request, 25_000)
+      const data = (await response.json()) as GASBatchTranslateResponse
 
       console.log('GAS Response status:', response.status)
       console.log('GAS Response data:', {
-        status: response.data.status,
-        processed: response.data.processed,
-        total: response.data.total,
-        executionTime: response.data.executionTime,
-        resultCount: response.data.results.length,
+        status: data.status,
+        processed: data.processed,
+        total: data.total,
+        executionTime: data.executionTime,
+        resultCount: data.results.length,
       })
 
-      if (response.status === 200 && response.data.status) {
-        console.log(
-          `Processing ${response.data.results.length} results from GAS`
-        )
+      if (response.status === 200 && data.status) {
+        console.log(`Processing ${data.results.length} results from GAS`)
 
-        for (const result of response.data.results) {
+        for (const result of data.results) {
           if (result.success && result.translated) {
             results.set(result.id, result.translated)
             if (shouldUseCache) {
@@ -121,21 +144,14 @@ export class Translator {
           }
         }
         console.log(
-          `Batch translation: ${response.data.processed}/${response.data.total} items processed in ${response.data.executionTime}ms`
+          `Batch translation: ${data.processed}/${data.total} items processed in ${data.executionTime}ms`
         )
         console.log(`Client received ${results.size} translated items`)
       } else {
-        console.error('GAS returned error status:', response.data)
+        console.error('GAS returned error status:', data)
       }
     } catch (error) {
       console.error('Batch translation error:', error)
-      if (error instanceof Error && 'response' in error) {
-        const axiosError = error as {
-          response?: { data?: unknown; status?: number }
-        }
-        console.error('Error response data:', axiosError.response?.data)
-        console.error('Error response status:', axiosError.response?.status)
-      }
       // フォールバック：元のテキストを使用
       for (const item of pendingItems) {
         results.set(item.id, item.text)
@@ -171,17 +187,14 @@ export class Translator {
         mode: 'html',
       }
 
-      const response = await axios.post<{
+      // 5 seconds timeout for Vercel compatibility
+      const response = await this.postWithTimeout(request, 5000)
+      const data = (await response.json()) as {
         response?: { status?: boolean; result?: string }
-      }>(this.gasUrl, request, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        timeout: 5000, // 5 seconds timeout for Vercel compatibility
-      })
+      }
 
-      if (response.status === 200 && response.data.response?.status) {
-        const translated = response.data.response.result ?? null
+      if (response.status === 200 && data.response?.status) {
+        const translated = data.response.result ?? null
         if (translated !== null && shouldUseCache) {
           this.cache.set(cacheKey, translated)
         }
