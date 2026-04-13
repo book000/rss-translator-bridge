@@ -30,6 +30,39 @@ export class Translator {
     return `${sourceLang}:${targetLang}:${hash}`
   }
 
+  /** タイムアウト付きで GAS に JSON POST し、レスポンスを返す。 */
+  private async postWithTimeout(
+    body: unknown,
+    timeoutMs: number
+  ): Promise<Response> {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => {
+      controller.abort()
+    }, timeoutMs)
+
+    let response: Response
+    try {
+      response = await fetch(this.gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timeoutId)
+    }
+
+    if (!response.ok) {
+      const errorBody = await response.text()
+      const errorDetail = errorBody ? ` - ${errorBody.slice(0, 1000)}` : ''
+      throw new Error(
+        `HTTP error: ${response.status} ${response.statusText}${errorDetail}`
+      )
+    }
+
+    return response
+  }
+
   /** 複数テキストをまとめて翻訳する。 */
   async translateBatch(
     items: BatchTranslateItem[],
@@ -80,27 +113,7 @@ export class Translator {
       )
 
       // 25 seconds timeout for batch processing (within Vercel's 30s limit)
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => {
-        controller.abort()
-      }, 25_000)
-
-      let response: Response
-      try {
-        response = await fetch(this.gasUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(request),
-          signal: controller.signal,
-        })
-      } finally {
-        clearTimeout(timeoutId)
-      }
-
-      if (!response.ok) {
-        throw new Error(`HTTP error: ${response.status}`)
-      }
-
+      const response = await this.postWithTimeout(request, 25_000)
       const data = (await response.json()) as GASBatchTranslateResponse
 
       console.log('GAS Response status:', response.status)
@@ -175,27 +188,7 @@ export class Translator {
       }
 
       // 5 seconds timeout for Vercel compatibility
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => {
-        controller.abort()
-      }, 5000)
-
-      let response: Response
-      try {
-        response = await fetch(this.gasUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(request),
-          signal: controller.signal,
-        })
-      } finally {
-        clearTimeout(timeoutId)
-      }
-
-      if (!response.ok) {
-        throw new Error(`HTTP error: ${response.status}`)
-      }
-
+      const response = await this.postWithTimeout(request, 5000)
       const data = (await response.json()) as {
         response?: { status?: boolean; result?: string }
       }

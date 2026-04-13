@@ -5,7 +5,9 @@ function mockFetchResponse(status: number, data: unknown): Response {
   return {
     ok: status >= 200 && status < 300,
     status,
+    statusText: status >= 200 && status < 300 ? 'OK' : 'Error',
     json: jest.fn().mockResolvedValue(data),
+    text: jest.fn().mockResolvedValue(''),
   } as unknown as Response
 }
 
@@ -16,7 +18,7 @@ describe('Translator', () => {
   beforeEach(() => {
     translator = new Translator('https://example.com/translate')
     mockedFetch = jest.fn()
-    globalThis.fetch = mockedFetch
+    jest.spyOn(globalThis, 'fetch').mockImplementation(mockedFetch)
   })
 
   afterEach(() => {
@@ -132,7 +134,7 @@ describe('Translator - Batch Translation', () => {
   beforeEach(() => {
     translator = new Translator('https://example.com/translate')
     mockedFetch = jest.fn()
-    globalThis.fetch = mockedFetch
+    jest.spyOn(globalThis, 'fetch').mockImplementation(mockedFetch)
   })
 
   afterEach(() => {
