@@ -27,11 +27,11 @@ pnpm fix            # prettier --write と eslint --fix をまとめて実行
 
 ## アーキテクチャと主要ファイル
 
-- `src/index.ts`: Fastify アプリの組み立て（`getApp()`）と起動。ルーティング (`GET /`, `GET /health`) を定義。
+- `src/index.ts`: Fastify アプリの組み立て（`getApp()`）と起動。`@fastify/static` で `public/`（Web UI）を `/` に配信し、`GET /health` / `GET /api`（翻訳） / `GET /api/proxy`（元 RSS 取得プロキシ）を定義。
 - `src/config.ts`: 環境変数から `Config` を構築（`loadConfig()`）。`GAS_URL` 未設定時は起動時に例外。
 - `src/rss-processor.ts`: `rss-parser` でフィードを取得・解析し、翻訳後に `xml2js` で XML を再構築。
 - `src/translator.ts`: GAS API へ `fetch` で JSON を POST してバッチ翻訳。`AbortController` によるタイムアウト付き（バッチ 25 秒 / 個別 5 秒）。翻訳失敗時は元テキストにフォールバック。
-- `src/translation-cache.ts`: 翻訳結果のインメモリ TTL キャッシュ（キーは `createHash` によるハッシュ）。
+- `src/translation-cache.ts`: 翻訳結果のインメモリ TTL キャッシュ（`Map` ベース、上限超過分を削除）。キー（`sha256` ハッシュ）は `translator.ts` 側で生成する。
 - `src/cache-control.ts`: CDN 向け `Cache-Control` ヘッダー（`s-maxage` / `stale-while-revalidate`）を生成。
 - `src/types.ts`: 型定義（`Config`、RSS、翻訳リクエスト/レスポンス等）。
 - `api/serverless.ts`: Vercel サーバーレス関数のエントリーポイント。
@@ -71,8 +71,10 @@ pnpm fix            # prettier --write と eslint --fix をまとめて実行
 
 ## API 仕様
 
-- `GET /`: RSS を翻訳して返すメインエンドポイント。クエリ `url`（必須）、`sourceLang` / `targetLang` / `excludeFeedTitle` / `excludeItemTitle`（任意）。成功時は翻訳済み RSS XML、失敗時はエラー JSON。
+- `GET /api`: RSS を翻訳して返すメインエンドポイント。クエリ `url`（必須）、`sourceLang` / `targetLang` / `excludeFeedTitle` / `excludeItemTitle`（任意）。成功時は翻訳済み RSS XML、失敗時はエラー JSON。
+- `GET /api/proxy`: 元 RSS を取得して返すプロキシ（Web UI の CORS 回避用）。クエリ `url`（必須）。
 - `GET /health`: ヘルスチェック。
+- `GET /`: `public/` の静的な Web UI（`@fastify/static` が配信）。
 
 ## リポジトリ固有の注意
 
