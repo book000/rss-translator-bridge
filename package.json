@@ -28,9 +28,9 @@
   "author": "book000",
   "license": "MIT",
   "dependencies": {
-    "@fastify/cors": "^8.5.0",
-    "@fastify/static": "^7.0.4",
-    "fastify": "^4.25.0",
+    "@fastify/cors": "8.5.0",
+    "@fastify/static": "7.0.4",
+    "fastify": "4.29.1",
     "rss-parser": "^3.13.0",
     "xml2js": "^0.6.2"
   },
