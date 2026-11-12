@@ -8,6 +8,9 @@ import {
 } from './types.js'
 import { TranslationCache } from './translation-cache.js'
 
+/** Default upper bound in milliseconds for one GAS batch request. */
+export const BATCH_TIMEOUT_MS = 25_000
+
 /**
  * Translation client for the Google Apps Script (GAS) API.
  *
@@ -39,40 +42,42 @@ export class Translator {
   }
 
   /**
-   * POSTs JSON to the GAS API and aborts the request after `timeoutMs`.
+   * POSTs JSON to the GAS API and parses the JSON response, aborting everything after `timeoutMs`.
    *
-   * @throws {Error} On a non-2xx response or a network error. The timeout covers only the response headers, not reading the body.
+   * @param body Request payload, serialized as JSON
+   * @param timeoutMs Upper bound in milliseconds for the whole exchange: headers, body read and JSON parsing
+   * @returns The HTTP status and the parsed response body, which the caller must validate or cast
+   * @throws {Error} On a non-2xx response, a network error, a timeout or an invalid JSON body
    */
   private async postWithTimeout(
     body: unknown,
     timeoutMs: number
-  ): Promise<Response> {
+  ): Promise<{ status: number; data: unknown }> {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => {
       controller.abort()
     }, timeoutMs)
 
-    let response: Response
     try {
-      response = await fetch(this.gasUrl, {
+      const response = await fetch(this.gasUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
         signal: controller.signal,
       })
+
+      if (!response.ok) {
+        const errorBody = await response.text()
+        const errorDetail = errorBody ? ` - ${errorBody.slice(0, 1000)}` : ''
+        throw new Error(
+          `HTTP error: ${response.status} ${response.statusText}${errorDetail}`
+        )
+      }
+
+      return { status: response.status, data: await response.json() }
     } finally {
       clearTimeout(timeoutId)
     }
-
-    if (!response.ok) {
-      const errorBody = await response.text()
-      const errorDetail = errorBody ? ` - ${errorBody.slice(0, 1000)}` : ''
-      throw new Error(
-        `HTTP error: ${response.status} ${response.statusText}${errorDetail}`
-      )
-    }
-
-    return response
   }
 
   /**
@@ -84,12 +89,14 @@ export class Translator {
    * @param items Texts to translate, each with an id
    * @param sourceLang Source language code
    * @param targetLang Target language code
+   * @param timeoutMs Upper bound in milliseconds for the GAS request, including reading the response. When 0 or less, GAS is not called and every uncached item falls back to its original text.
    * @returns Translated (or fallback) text keyed by item id
    */
   async translateBatch(
     items: BatchTranslateItem[],
     sourceLang: string,
-    targetLang: string
+    targetLang: string,
+    timeoutMs = BATCH_TIMEOUT_MS
   ): Promise<Map<string, string>> {
     const results = new Map<string, string>()
     const pendingItems: BatchTranslateItem[] = []
@@ -115,6 +122,13 @@ export class Translator {
       return results
     }
 
+    if (timeoutMs <= 0) {
+      for (const item of pendingItems) {
+        results.set(item.id, item.text)
+      }
+      return results
+    }
+
     try {
       const request: GASBatchTranslateRequest = {
         batch: true,
@@ -134,11 +148,13 @@ export class Translator {
           .map((item) => ({ id: item.id, textLength: item.text.length }))
       )
 
-      // 25s leaves headroom under the 30s Vercel function limit (`maxDuration` in vercel.json)
-      const response = await this.postWithTimeout(request, 25_000)
-      const data = (await response.json()) as GASBatchTranslateResponse
+      const { status, data: responseBody } = await this.postWithTimeout(
+        request,
+        timeoutMs
+      )
+      const data = responseBody as GASBatchTranslateResponse
 
-      console.log('GAS Response status:', response.status)
+      console.log('GAS Response status:', status)
       console.log('GAS Response data:', {
         status: data.status,
         processed: data.processed,
@@ -147,7 +163,7 @@ export class Translator {
         resultCount: data.results.length,
       })
 
-      if (response.status === 200 && data.status) {
+      if (status === 200 && data.status) {
         console.log(`Processing ${data.results.length} results from GAS`)
 
         for (const result of data.results) {
@@ -216,13 +232,15 @@ export class Translator {
         mode: 'html',
       }
 
-      // Keep single translations short to stay within the Vercel function limit
-      const response = await this.postWithTimeout(request, 5000)
-      const data = (await response.json()) as {
+      const { status, data: responseBody } = await this.postWithTimeout(
+        request,
+        5000
+      )
+      const data = responseBody as {
         response?: { status?: boolean; result?: string }
       }
 
-      if (response.status === 200 && data.response?.status) {
+      if (status === 200 && data.response?.status) {
         const translated = data.response.result ?? null
         if (translated !== null && shouldUseCache) {
           this.cache.set(cacheKey, translated)
