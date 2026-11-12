@@ -217,7 +217,6 @@ Set `GAS_URL` (and any other variables) in the Vercel project settings, then dep
 Fetching, parsing and translating a feed share a 27 second budget, which leaves 3 seconds of the 30 second limit for building and sending the response.
 The GAS batch timeout is the smaller of 25 seconds and the budget left after the feed fetch, and it also covers reading the response body.
 A very large feed whose translation does not finish in time is still returned, with the untranslated items in their original text.
-A single-text request keeps its 5 second timeout.
 
 The in-memory translation cache only lives as long as a function instance.
 

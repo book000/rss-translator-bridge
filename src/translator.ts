@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto'
 import {
-  GASTranslateRequest,
   GASBatchTranslateRequest,
   GASBatchTranslateResponse,
   BatchTranslateItem,
@@ -14,7 +13,7 @@ export const BATCH_TIMEOUT_MS = 25_000
 /**
  * Translation client for the Google Apps Script (GAS) API.
  *
- * Failures never throw: a failed batch falls back to the original text, and a failed single translation returns null.
+ * Failures never throw: a failed batch falls back to the original text.
  */
 export class Translator {
   private gasUrl: string
@@ -83,8 +82,7 @@ export class Translator {
   /**
    * Translates multiple texts in one GAS request, serving cache hits locally.
    *
-   * Items GAS reports as failed fall back to their original text. If the whole request fails, every pending item falls back.
-   * If GAS does not report success (HTTP 200 with a truthy `status`), the pending items are left out of the returned map.
+   * Items GAS reports as failed fall back to their original text. If the whole request fails, or GAS does not report success (HTTP 200 with a truthy `status`), every pending item falls back.
    *
    * @param items Texts to translate, each with an id
    * @param sourceLang Source language code
@@ -187,71 +185,17 @@ export class Translator {
         console.log(`Client received ${results.size} translated items`)
       } else {
         console.error('GAS returned error status:', data)
+        for (const item of pendingItems) {
+          results.set(item.id, item.text)
+        }
       }
     } catch (error) {
       console.error('Batch translation error:', error)
-      // Fall back to the original text
       for (const item of pendingItems) {
         results.set(item.id, item.text)
       }
     }
 
     return results
-  }
-
-  /**
-   * Translates a single text with the GAS API.
-   *
-   * @param text Text to translate
-   * @param sourceLang Source language code
-   * @param targetLang Target language code
-   * @returns The translation, or null on failure
-   */
-  async translate(
-    text: string,
-    sourceLang: string,
-    targetLang: string
-  ): Promise<string | null> {
-    const shouldUseCache = this.cache.isEnabled()
-    const cacheKey = shouldUseCache
-      ? this.createCacheKey(text, sourceLang, targetLang)
-      : ''
-
-    if (shouldUseCache) {
-      const cached = this.cache.get(cacheKey)
-      if (cached !== null) {
-        return cached
-      }
-    }
-
-    try {
-      const request: GASTranslateRequest = {
-        before: sourceLang,
-        after: targetLang,
-        text,
-        mode: 'html',
-      }
-
-      const { status, data: responseBody } = await this.postWithTimeout(
-        request,
-        5000
-      )
-      const data = responseBody as {
-        response?: { status?: boolean; result?: string }
-      }
-
-      if (status === 200 && data.response?.status) {
-        const translated = data.response.result ?? null
-        if (translated !== null && shouldUseCache) {
-          this.cache.set(cacheKey, translated)
-        }
-        return translated
-      }
-
-      return null
-    } catch (error) {
-      console.error('Translation error:', error)
-      return null
-    }
   }
 }

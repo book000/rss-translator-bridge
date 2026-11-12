@@ -11,122 +11,6 @@ function mockFetchResponse(status: number, data: unknown): Response {
   } as unknown as Response
 }
 
-describe('Translator', () => {
-  let translator: Translator
-  let mockedFetch: jest.MockedFunction<typeof fetch>
-
-  beforeEach(() => {
-    translator = new Translator('https://example.com/translate')
-    mockedFetch = jest.fn()
-    jest.spyOn(globalThis, 'fetch').mockImplementation(mockedFetch)
-  })
-
-  afterEach(() => {
-    jest.restoreAllMocks()
-  })
-
-  it('should translate text successfully', async () => {
-    mockedFetch.mockResolvedValueOnce(
-      mockFetchResponse(200, {
-        response: { status: true, result: 'こんにちは' },
-      })
-    )
-
-    const result = await translator.translate('Hello', 'en', 'ja')
-
-    expect(result).toBe('こんにちは')
-    expect(mockedFetch).toHaveBeenCalledWith(
-      'https://example.com/translate',
-      expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          before: 'en',
-          after: 'ja',
-          text: 'Hello',
-          mode: 'html',
-        }),
-      })
-    )
-  })
-
-  it('should reuse cached translation on repeated calls', async () => {
-    translator = new Translator('https://example.com/translate', {
-      enabled: true,
-      ttlMs: 60_000,
-      maxItems: 100,
-    })
-    mockedFetch.mockResolvedValueOnce(
-      mockFetchResponse(200, {
-        response: { status: true, result: 'こんにちは' },
-      })
-    )
-
-    const first = await translator.translate('Hello', 'en', 'ja')
-    const second = await translator.translate('Hello', 'en', 'ja')
-
-    expect(first).toBe('こんにちは')
-    expect(second).toBe('こんにちは')
-    expect(mockedFetch).toHaveBeenCalledTimes(1)
-  })
-
-  it('should return null on translation error', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
-      // no-op
-    })
-    mockedFetch.mockRejectedValueOnce(new Error('Network error'))
-
-    const result = await translator.translate('Hello', 'en', 'ja')
-
-    expect(result).toBeNull()
-    consoleSpy.mockRestore()
-  })
-
-  it('should return null on non-200 status', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
-      // no-op
-    })
-    mockedFetch.mockResolvedValueOnce(mockFetchResponse(500, {}))
-
-    const result = await translator.translate('Hello', 'en', 'ja')
-
-    expect(result).toBeNull()
-    consoleSpy.mockRestore()
-  })
-
-  it('should return null when response.data.response is undefined', async () => {
-    mockedFetch.mockResolvedValueOnce(mockFetchResponse(200, {}))
-
-    const result = await translator.translate('Hello', 'en', 'ja')
-
-    expect(result).toBeNull()
-  })
-
-  it('should return null when response.data.response.status is false', async () => {
-    mockedFetch.mockResolvedValueOnce(
-      mockFetchResponse(200, {
-        response: { status: false, result: 'こんにちは' },
-      })
-    )
-
-    const result = await translator.translate('Hello', 'en', 'ja')
-
-    expect(result).toBeNull()
-  })
-
-  it('should handle timeout error', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
-      // no-op
-    })
-    mockedFetch.mockRejectedValueOnce(new Error('timeout'))
-
-    const result = await translator.translate('Hello', 'en', 'ja')
-
-    expect(result).toBeNull()
-    consoleSpy.mockRestore()
-  })
-})
-
 describe('Translator - Batch Translation', () => {
   let translator: Translator
   let mockedFetch: jest.MockedFunction<typeof fetch>
@@ -266,7 +150,7 @@ describe('Translator - Batch Translation', () => {
     consoleSpy.mockRestore()
   })
 
-  it('should return empty map when response status is false', async () => {
+  it('should return fallback texts when response status is false', async () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
       // no-op
     })
@@ -282,7 +166,33 @@ describe('Translator - Batch Translation', () => {
 
     const result = await translator.translateBatch(mockBatchItems, 'en', 'ja')
 
-    expect(result.size).toBe(0)
+    expect(result.size).toBe(3)
+    expect(result.get('item1')).toBe('Hello')
+    expect(result.get('item2')).toBe('World')
+    expect(result.get('item3')).toBe('How are you?')
+    consoleSpy.mockRestore()
+  })
+
+  it('should return fallback texts on a non-200 2xx response', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {
+      // no-op
+    })
+    mockedFetch.mockResolvedValueOnce(
+      mockFetchResponse(204, {
+        status: true,
+        processed: 0,
+        total: 3,
+        executionTime: 0,
+        results: [],
+      })
+    )
+
+    const result = await translator.translateBatch(mockBatchItems, 'en', 'ja')
+
+    expect(result.size).toBe(3)
+    expect(result.get('item1')).toBe('Hello')
+    expect(result.get('item2')).toBe('World')
+    expect(result.get('item3')).toBe('How are you?')
     consoleSpy.mockRestore()
   })
 

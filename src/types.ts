@@ -36,22 +36,8 @@ export interface TranslateRequest {
 
 /** JSON body of `GET /api` responses. Only error bodies are returned today; success responses are RSS XML. */
 export interface TranslateResponse {
-  status: 'success' | 'error'
-  data?: string
+  status: 'error'
   error?: string
-}
-
-/** Request body for translating a single text with the GAS API. */
-export interface GASTranslateRequest {
-  before: string
-  after: string
-  text: string
-  mode: 'html'
-}
-
-/** Single-text GAS response shape. Unused: `Translator.translate` reads `{ response?: { status?, result? } }` instead. */
-export interface GASTranslateResponse {
-  text: string
 }
 
 /** An item to translate in a batch. */
